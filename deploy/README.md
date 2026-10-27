@@ -36,6 +36,14 @@ Los archivos FIT, `.env`, reportes, bases SQLite y el historial Git no forman
 parte del contexto de construcción. `.dockerignore` y `.gcloudignore` usan una
 lista explícita de archivos permitidos.
 
+## Operación como código
+
+La infraestructura se administra desde [infra/terraform](../infra/terraform/README.md).
+Incluye el bootstrap del backend GCS, la adopción de los recursos existentes y
+la configuración declarativa del servicio. Ejecutar `terraform plan` antes de
+cualquier cambio; el estado, `backend.hcl` y los valores por entorno permanecen
+fuera de Git.
+
 ## Comprobación local sin secretos ni FIT
 
 ```powershell
