@@ -1,0 +1,24 @@
+# Secrets and local runtime configuration
+.env
+.env.*
+!.env.example
+
+# Python environment and generated files
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# ADK runtime state
+sport_assistant_agent/.adk/
+
+# Personal health telemetry and generated local memory
+data/accesslink_fit/
+data/agent_memory/
+data/analysis_april_may.json
+reports/
+
+# Local operating-system files
+.DS_Store
+Thumbs.db

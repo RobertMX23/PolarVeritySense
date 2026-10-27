@@ -1,0 +1,5 @@
+google-adk
+pydantic>=2
+pytest
+requests>=2.32
+fitparse>=1.2.0

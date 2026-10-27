@@ -1,0 +1,20 @@
+# Source-upload allowlist, independent of Git history and .gitignore.
+**
+!pyproject.toml
+!.dockerignore
+!src/
+!src/**
+!sport_assistant_agent/
+!sport_assistant_agent/**
+!deploy/
+!deploy/Dockerfile
+!deploy/requirements.txt
+!deploy/start.sh
+!deploy/cloudbuild.yaml
+**/__pycache__/**
+**/*.pyc
+**/.adk/**
+**/.env
+**/.env.*
+**/*.fit
+**/*.db

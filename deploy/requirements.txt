@@ -1,0 +1,7 @@
+# Direct runtime versions validated locally; no credential-bearing package URLs.
+google-adk==2.12.0
+google-genai==2.32.0
+pydantic==2.14.1
+requests==2.34.2
+python-dotenv==1.2.4
+fitparse==1.2.0
