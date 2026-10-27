@@ -1,11 +1,17 @@
-# Polar Verity Sense — QA en Cloud Run
+# PolarVeritySense
+
+Repositorio público oficial: https://github.com/RobertMX23/PolarVeritySense.
+Consulta el [contrato de publicación pública](specs/PUBLIC_REPOSITORY_CONTRACT.md)
+antes de añadir datos, ejemplos o automatizaciones.
+
+## QA en Cloud Run
 
 Agente Python con Google ADK: ingesta y cálculos en Python, resumen Pydantic
 1.1, analista y crítico Gemini, aprobación humana ligada a caso/propuesta y
 auditoría de simulación. Máximo tres generaciones por caso.
 
-Este repositorio privado comienza con una copia seleccionada del código actual.
-El historial y los cambios del repositorio local original permanecen intactos.
+Esta copia seleccionada del código actual excluye datos personales y evidencia
+de ejecución. El historial y los cambios del repositorio local original permanecen intactos.
 Se excluyen credenciales, FIT, reportes personales, documentos de trabajo y
 pruebas que dependen de telemetría real. No hay despliegue automático ni triggers.
 
