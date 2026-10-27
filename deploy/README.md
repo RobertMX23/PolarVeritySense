@@ -1,16 +1,23 @@
 # Cloud Run: entorno privado de QA
 
-Destino preparado: proyecto `polar-verity-robertmx23-2026`, región
-`us-central1`, servicio previsto `polar-sport-assistant`.
-Repositorio privado: https://github.com/RobertMX23/PolarVeritySense.
+Destino desplegado: proyecto `polar-verity-robertmx23-2026`, región
+`us-central1`, servicio `polar-sport-assistant`. El código fuente público está
+en https://github.com/RobertMX23/PolarVeritySense; el servicio sigue protegido
+por IAM y no se convierte en público por la visibilidad del repositorio.
 
-El proyecto existe, pero el servicio todavía no está desplegado. La facturación
-no está vinculada. La imagen local inicia ADK 2.12.0 con Python 3.13.18,
-importa el mismo `SportAssistantRoot` y responde a `/version`, `/list-apps` y al
-grafo de la aplicación. Estas comprobaciones no ejecutan Gemini ni prueban la
-ingesta real.
+La facturación está vinculada y los servicios Cloud Run, Cloud Build, Artifact
+Registry y Secret Manager están habilitados. La revisión
+`polar-sport-assistant-00001-rdh` recibe 100% del tráfico desde la imagen
+inmutable `sha256:bd952e4c6c74eb5d8db9e0398d64904deaf526bb2ca9d32e35f51d173054f24d`.
+La imagen inicia ADK 2.12.0 con Python 3.13.18 y el mismo
+`SportAssistantRoot`.
 
-## Configuración propuesta
+La comprobación IAM contra el servicio devolvió HTTP 200 para `/version`,
+`/list-apps` y el grafo de la aplicación. No ejecutó Gemini, no incluyó una
+clave ni montó FIT. Es una prueba de disponibilidad y de autenticación, no una
+prueba integrada de recomendaciones.
+
+## Configuración vigente
 
 | Recurso | Configuración |
 |---|---|
@@ -20,16 +27,14 @@ ingesta real.
 | Imagen | Linux amd64; usuario sin privilegios; mismo `root_agent` |
 | Modelos | Gemini configurado por la aplicación; máximo 3 generaciones por caso |
 | Artefactos | Artifact Registry privado: `polar-assistant` |
-| Credencial Gemini | Secret Manager; permiso de lectura sólo al runtime |
-| FIT, si se autoriza su copia | Bucket privado; montaje de sólo lectura en `/mounts/polar-fit` |
+| Credencial Gemini | Secret Manager habilitado, sin secreto creado ni acceso concedido |
+| FIT | No se copió ninguno; futuro bucket privado y montaje de sólo lectura requieren autorización |
 | Sesiones | SQLite en `/tmp/polar-adk`; efímeras en esta prueba |
 | Auditoría | Simulación; exportar la evidencia antes de que termine la instancia |
 
-La facturación, el almacenamiento de la clave en Secret Manager y la copia de
-FIT reales requieren autorización específica para este destino. Los archivos
-FIT, `.env`, reportes, bases SQLite y el historial Git no forman parte del
-contexto de construcción. `.dockerignore` y `.gcloudignore` usan una lista
-explícita de archivos permitidos.
+Los archivos FIT, `.env`, reportes, bases SQLite y el historial Git no forman
+parte del contexto de construcción. `.dockerignore` y `.gcloudignore` usan una
+lista explícita de archivos permitidos.
 
 ## Comprobación local sin secretos ni FIT
 
@@ -47,26 +52,29 @@ Las seis dependencias directas se fijan en `requirements.txt`; las transitivas
 y la etiqueta de la imagen base pueden cambiar en una futura reconstrucción.
 Se debe conservar el digest de la imagen efectivamente desplegada.
 
-## Secuencia de despliegue, después de autorización
+## Próxima prueba integrada, con autorización específica
 
-1. Vincular la cuenta de facturación elegida al proyecto indicado. Usar
-   `--project` y `--account` explícitos; no modificar la configuración global.
-2. Habilitar Cloud Run, Cloud Build, Artifact Registry y Secret Manager; crear
-   el repositorio Docker y una cuenta de servicio dedicada sin roles generales.
-3. Ejecutar Cloud Build con `deploy/cloudbuild.yaml`; guardar el ID del build
-   y el digest. Publicar sólo el contexto permitido.
-4. Si se autoriza la prueba con datos reales, guardar la clave directamente en
-   Secret Manager sin imprimirla; copiar sólo los dos FIT requeridos al bucket
-   privado y otorgar al runtime lectura del secreto y de esos objetos.
-5. Desplegar el digest con `--no-allow-unauthenticated`, cuenta dedicada,
-   `--min=0 --max=1 --max-instances=1 --concurrency=1 --cpu=1 --memory=512Mi
-   --timeout=300`. Incorporar el secreto y montaje únicamente si se autorizaron.
-6. Acceder mediante `gcloud run services proxy polar-sport-assistant
-   --project=polar-verity-robertmx23-2026 --region=us-central1 --port=8089`.
-   No hacer público ADK Web para facilitar la prueba.
-7. Verificar versión y grafo. Abrir un caso cloud nuevo, conservar todos sus
-   eventos y solicitar la aprobación humana específica de su propuesta.
-   La aprobación del caso local anterior no autoriza el caso cloud.
+1. Guardar la clave directamente en Secret Manager sin imprimirla y conceder
+   lectura sólo a `polar-sport-runtime`.
+2. Copiar únicamente los FIT autorizados a un bucket privado y conceder al
+   runtime lectura de esos objetos. No incorporarlos a la imagen.
+3. Crear una revisión nueva con el secreto y el montaje explícitos. Conservar el
+   digest de la imagen y la configuración de revisión como evidencia.
+4. Abrir un caso cloud nuevo y ejecutar el flujo completo. La aprobación del
+   caso local anterior no autoriza el caso cloud.
+
+La autorización de infraestructura no cubre estos cuatro pasos ni el envío de
+información biométrica a este destino.
+
+## Referencia de despliegue reproducible
+
+Para una nueva imagen, ejecutar Cloud Build con `deploy/cloudbuild.yaml` y
+desplegar el digest con `--no-allow-unauthenticated`, cuenta dedicada,
+`--min=0 --max=1 --max-instances=1 --concurrency=1 --cpu=1 --memory=512Mi
+--timeout=300`. Incorporar el secreto y montaje únicamente si se autorizaron.
+Acceder autenticadamente mediante un token de identidad temporal; no hacer
+público ADK Web para facilitar la prueba.
+
 
 ## Medición y límites de la prueba
 
