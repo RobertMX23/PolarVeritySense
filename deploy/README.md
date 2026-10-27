@@ -64,7 +64,10 @@ Se debe conservar el digest de la imagen efectivamente desplegada.
    caso local anterior no autoriza el caso cloud.
 
 La autorización de infraestructura no cubre estos cuatro pasos ni el envío de
-información biométrica a este destino.
+información biométrica a este destino. Si se autoriza la prueba con datos
+reales, guardar la clave directamente en Secret Manager sin imprimirla; copiar
+solamente los FIT requeridos al bucket privado y otorgar al runtime lectura del
+secreto y de esos objetos.
 
 ## Referencia de despliegue reproducible
 
@@ -72,8 +75,8 @@ Para una nueva imagen, ejecutar Cloud Build con `deploy/cloudbuild.yaml` y
 desplegar el digest con `--no-allow-unauthenticated`, cuenta dedicada,
 `--min=0 --max=1 --max-instances=1 --concurrency=1 --cpu=1 --memory=512Mi
 --timeout=300`. Incorporar el secreto y montaje únicamente si se autorizaron.
-Acceder autenticadamente mediante un token de identidad temporal; no hacer
-público ADK Web para facilitar la prueba.
+Acceder autenticadamente, por ejemplo mediante un token de identidad temporal;
+no hacer público ADK Web para facilitar la prueba.
 
 
 ## Medición y límites de la prueba

@@ -22,3 +22,12 @@ reports/
 # Local operating-system files
 .DS_Store
 Thumbs.db
+
+# Terraform state and per-environment values
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.tfplan
+**/backend.hcl

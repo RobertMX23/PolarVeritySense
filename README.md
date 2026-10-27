@@ -11,7 +11,7 @@ Agente Python con Google ADK: ingesta y cálculos en Python, resumen Pydantic
 auditoría de simulación. Máximo tres generaciones por caso.
 
 Esta copia seleccionada del código actual excluye datos personales y evidencia
-de ejecución. El historial y los cambios del repositorio local original permanecen intactos.
+de ejecución.
 Se excluyen credenciales, FIT, reportes personales, documentos de trabajo y
 pruebas que dependen de telemetría real. No hay despliegue automático ni triggers.
 
@@ -21,6 +21,13 @@ Ver [la preparación de Cloud Run](deploy/README.md). El contenedor usa el mismo
 `root_agent`; para el ensayo real necesita un montaje FIT autorizado y una
 credencial Gemini suministrada fuera de la imagen. El servicio deberá ser
 privado y sus sesiones locales son efímeras.
+
+## Infraestructura como código
+
+La configuración reproducible está en [infra/terraform](infra/terraform/README.md).
+Adopta el servicio privado ya desplegado, el registro de imágenes, las APIs y
+la cuenta de ejecución. El estado vive en un bucket privado versionado; los
+archivos de estado, `backend.hcl` y valores locales no se publican.
 
 ## Pruebas sin datos personales
 
