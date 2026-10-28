@@ -35,6 +35,8 @@ La comparación con los patrones oficiales de ADK 2.x está en
 [ADK_2_WORKFLOW_ALIGNMENT.md](ADK_2_WORKFLOW_ALIGNMENT.md). El flujo conserva
 agentes personalizados para aplicar rutas condicionales, límite de tres
 generaciones y aprobación humana sin delegación implícita.
+La referencia de grafos y la tabla cruzada están en
+[ADK_GRAPH_WORKFLOW_EVALUATION.md](ADK_GRAPH_WORKFLOW_EVALUATION.md).
 
 ## Pruebas sin datos personales
 
