@@ -63,6 +63,14 @@ Hasta completar el paso 4, IAP responde `502` con
 ID(s)/secret(s)`. Es una señal de configuración OAuth pendiente, no una
 apertura del contenedor ni un fallo de la aplicación.
 
+El proyecto QA ya tiene configurado en Google Cloud el cliente externo
+`PolarVeritySense IAP`; su secreto no se conserva en este repositorio ni en
+Terraform. La cuenta propietaria es usuaria de prueba OAuth y miembro explícito
+de IAP. Mientras la aplicación OAuth esté en modo **Testing**, cada nueva
+cuenta Google debe añadirse tanto a los usuarios de prueba en Google Auth
+Platform como a `iap_access_members` en Terraform. El límite previo a la
+verificación es 100 usuarios.
+
 ## Verificación
 
 Después de la configuración OAuth, abrir:
@@ -71,7 +79,7 @@ Después de la configuración OAuth, abrir:
 
 El navegador debe redirigir a la selección de cuenta Google. Una cuenta fuera
 de `iap_access_members` debe recibir una denegación de IAP; una cuenta incluida
-debe llegar a ADK Web. Validar también que el plan de Terraform no proponga
-acceso público.
+como usuaria de prueba OAuth debe llegar a ADK Web. Validar también que el plan
+de Terraform no proponga acceso público.
 
 Referencias: [Configurar IAP para Cloud Run](https://cloud.google.com/run/docs/securing/identity-aware-proxy-cloud-run) y [clientes OAuth para acceso externo](https://cloud.google.com/iap/docs/managed-oauth-client).

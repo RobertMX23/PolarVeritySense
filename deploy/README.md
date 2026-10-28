@@ -11,11 +11,13 @@ en la política IAP. El cambio está declarado en
 [`infra/terraform`](../infra/terraform/README.md); no requiere balanceador ni
 un dominio propio para proteger la URL `run.app`.
 
-IAP está habilitado en el servicio. Para cuentas Gmail o cuentas fuera de
-Google Workspace falta el alta inicial del cliente OAuth externo en Google Auth
-Platform. Mientras esa credencial no exista, la URL devuelve el diagnóstico de
-IAP `502 Empty Google Account OAuth client ID(s)/secret(s)`; no es un fallo de
-ADK ni una política pública. El procedimiento se mantiene en
+IAP está habilitado y el cliente OAuth externo vive sólo en Google Auth
+Platform; una petición anónima a la URL devuelve `302` hacia Google Sign-In.
+La aplicación OAuth está en modo de pruebas: la cuenta propietaria figura como
+usuaria de prueba y miembro de IAP. Para añadir otra cuenta Gmail, añadirla
+tanto a los usuarios de prueba OAuth como a `iap_access_members`, y aplicar
+Terraform. El secreto OAuth no se guarda en el repositorio, el estado ni
+archivos de proyecto. El procedimiento se mantiene en
 [`IAP_DIRECT_ARCHITECTURE.md`](../infra/terraform/IAP_DIRECT_ARCHITECTURE.md).
 
 La facturación está vinculada y los servicios Cloud Run, Cloud Build, Artifact
