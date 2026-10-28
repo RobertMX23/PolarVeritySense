@@ -3,7 +3,7 @@ region     = "us-central1"
 
 # Pin the image that has been tested. Replace only with a new digest after its
 # build and local validation are recorded.
-container_image = "us-central1-docker.pkg.dev/polar-verity-robertmx23-2026/polar-assistant/sport-assistant@sha256:1a7096d351480a33429cecb9ef785ab683aab157310411b7024563493c69c8a8"
+container_image = "us-central1-docker.pkg.dev/polar-verity-robertmx23-2026/polar-assistant/sport-assistant@sha256:4fca3c7dccec787279b3b0d988a9f8baadfcafad9d58f10cd9135af2135440f5"
 gemini_model    = "gemini-3.8-flash"
 gemini_location = "global"
 
