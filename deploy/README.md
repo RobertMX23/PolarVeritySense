@@ -5,9 +5,22 @@ Destino desplegado: proyecto `polar-verity-robertmx23-2026`, región
 en https://github.com/RobertMX23/PolarVeritySense; el servicio sigue protegido
 por IAM y no se convierte en público por la visibilidad del repositorio.
 
+La siguiente configuración de acceso web usa IAP directo: Google muestra el
+inicio de sesión y sólo entrega la petición a Cloud Run cuando la cuenta está
+en la política IAP. El cambio está declarado en
+[`infra/terraform`](../infra/terraform/README.md); no requiere balanceador ni
+un dominio propio para proteger la URL `run.app`.
+
+IAP está habilitado en el servicio. Para cuentas Gmail o cuentas fuera de
+Google Workspace falta el alta inicial del cliente OAuth externo en Google Auth
+Platform. Mientras esa credencial no exista, la URL devuelve el diagnóstico de
+IAP `502 Empty Google Account OAuth client ID(s)/secret(s)`; no es un fallo de
+ADK ni una política pública. El procedimiento se mantiene en
+[`IAP_DIRECT_ARCHITECTURE.md`](../infra/terraform/IAP_DIRECT_ARCHITECTURE.md).
+
 La facturación está vinculada y los servicios Cloud Run, Cloud Build, Artifact
 Registry y Secret Manager están habilitados. La revisión
-`polar-sport-assistant-00001-rdh` recibe 100% del tráfico desde la imagen
+`polar-sport-assistant-00002-4k5` recibe 100% del tráfico desde la imagen
 inmutable `sha256:bd952e4c6c74eb5d8db9e0398d64904deaf526bb2ca9d32e35f51d173054f24d`.
 La imagen inicia ADK 2.12.0 con Python 3.13.18 y el mismo
 `SportAssistantRoot`.

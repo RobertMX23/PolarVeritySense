@@ -2,6 +2,7 @@ locals {
   required_apis = toset([
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
+    "iap.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
     "storage.googleapis.com",
@@ -37,6 +38,7 @@ resource "google_cloud_run_v2_service" "qa" {
   location            = var.region
   project             = var.project_id
   ingress             = "INGRESS_TRAFFIC_ALL"
+  iap_enabled         = var.enable_iap
   deletion_protection = true
 
   labels = {
@@ -101,6 +103,34 @@ resource "google_cloud_run_v2_service" "qa" {
       error_message = "Cloud Run must remain capped at one instance for this QA environment."
     }
   }
+}
+
+# IAP is the only identity permitted to invoke the service once IAP is enabled.
+# It is a Google-managed service agent, not a user-managed credential.
+resource "google_cloud_run_v2_service_iam_member" "iap_invoker" {
+  count = var.enable_iap ? 1 : 0
+
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.qa.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-iap.iam.gserviceaccount.com"
+
+  depends_on = [google_project_service.required["iap.googleapis.com"]]
+}
+
+# Keep the list authoritative at this service only. A blank list deliberately
+# creates no policy: IAP can be enabled before a human access list is approved.
+resource "google_iap_web_cloud_run_service_iam_binding" "authorized_users" {
+  count = var.enable_iap && length(var.iap_access_members) > 0 ? 1 : 0
+
+  project                = var.project_id
+  location               = var.region
+  cloud_run_service_name = google_cloud_run_v2_service.qa.name
+  role                   = "roles/iap.httpsResourceAccessor"
+  members                = var.iap_access_members
+
+  depends_on = [google_project_service.required["iap.googleapis.com"]]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "invokers" {

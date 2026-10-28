@@ -8,3 +8,9 @@ container_image = "us-central1-docker.pkg.dev/polar-verity-robertmx23-2026/polar
 # Keep this empty unless access must be granted at service level. Never use
 # allUsers or allAuthenticatedUsers for this QA service.
 service_invokers = []
+
+# IAP protects every ingress path, including the default run.app URL. Set this
+# only after the Google Auth Platform/OAuth client is configured for this
+# project. Add explicit Google users or a Google Group; never grant all users.
+enable_iap        = true
+iap_access_members = ["user:authorized-user@gmail.com"]

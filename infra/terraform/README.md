@@ -8,11 +8,38 @@ Este módulo adopta y administra el entorno privado de QA existente:
   usuario.
 - Servicio Cloud Run privado, con una instancia máxima, concurrencia uno,
   1 CPU, 512 MiB y una imagen por digest.
+- IAP directo opcional. Al habilitarlo, la URL `run.app` muestra el inicio de
+  sesión de Google antes de llegar al contenedor; no crea un balanceador, IP,
+  dominio ni una política pública.
 
 No administra la vinculación de facturación, secretos Gemini, buckets de FIT ni
 objetos biométricos. Esas operaciones tienen autorización y ciclo de vida
 separados. Tampoco publica una política `allUsers` o
 `allAuthenticatedUsers`; `service_invokers` queda vacío por defecto.
+
+## Acceso web con Google SSO
+
+Para este servicio único se usa IAP **directo** sobre Cloud Run. Es la
+arquitectura recomendada por Google para proteger también la URL `run.app` y
+evitar un balanceador adicional. El módulo habilita la API IAP, activa
+`iap_enabled`, concede `roles/run.invoker` únicamente al agente administrado
+de IAP y aplica una lista explícita de `iap_access_members` con el rol
+`roles/iap.httpsResourceAccessor`.
+
+Antes del primer `apply` con `enable_iap = true`, configurar en Google Auth
+Platform un cliente OAuth externo si se permitirán cuentas Gmail o cuentas
+fuera de una organización de Google Workspace. Google exige ese paso inicial
+en consola para proyectos sin organización; el secreto del cliente no se
+guarda en Terraform, Git ni el estado. Después, usar una lista concreta de
+usuarios `user:...` o un grupo `group:...` en `iap_access_members`.
+
+No usar `allUsers`, `allAuthenticatedUsers` ni un dominio completo salvo una
+decisión de acceso explícita. Mantener `service_invokers = []`: el único
+invocador de Cloud Run debe ser el agente de IAP.
+
+La arquitectura, el procedimiento de alta inicial y la señal de diagnóstico
+del cliente OAuth faltante están en
+[IAP_DIRECT_ARCHITECTURE.md](IAP_DIRECT_ARCHITECTURE.md).
 
 ## Estado remoto
 

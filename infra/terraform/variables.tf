@@ -37,3 +37,15 @@ variable "service_invokers" {
   type        = set(string)
   default     = []
 }
+
+variable "enable_iap" {
+  description = "Enable direct Identity-Aware Proxy on Cloud Run. This protects the run.app URL with Google sign-in and keeps the service non-public."
+  type        = bool
+  default     = false
+}
+
+variable "iap_access_members" {
+  description = "Google principals allowed through IAP, for example user:person@gmail.com or group:team@googlegroups.com. Do not use allUsers or allAuthenticatedUsers."
+  type        = set(string)
+  default     = []
+}
