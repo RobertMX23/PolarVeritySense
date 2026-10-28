@@ -39,6 +39,7 @@ La referencia de grafos y la tabla cruzada están en
 [ADK_GRAPH_WORKFLOW_EVALUATION.md](ADK_GRAPH_WORKFLOW_EVALUATION.md).
 El prompt de implementación controlada está en
 [ADK_GRAPH_IMPLEMENTATION_PROMPT.md](ADK_GRAPH_IMPLEMENTATION_PROMPT.md).
+El inventario actual de pruebas está en [TESTING.md](TESTING.md).
 
 ## Inicio de conversación
 
