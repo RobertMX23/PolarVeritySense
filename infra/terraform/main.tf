@@ -1,6 +1,7 @@
 locals {
   required_apis = toset([
     "artifactregistry.googleapis.com",
+    "aiplatform.googleapis.com",
     "cloudbuild.googleapis.com",
     "iap.googleapis.com",
     "run.googleapis.com",
@@ -31,6 +32,16 @@ resource "google_service_account" "runtime" {
   account_id   = var.runtime_service_account_id
   display_name = "Polar Sport Assistant Cloud Run runtime"
   description  = "Dedicated runtime identity for the private PolarVeritySense QA service; no user-managed keys."
+}
+
+# The workload identity is the only principal that can invoke Gemini through
+# Vertex AI. No user-managed Gemini API key is created, stored or mounted.
+resource "google_project_iam_member" "runtime_vertex_user" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
+
+  depends_on = [google_project_service.required["aiplatform.googleapis.com"]]
 }
 
 resource "google_cloud_run_v2_service" "qa" {
@@ -67,6 +78,26 @@ resource "google_cloud_run_v2_service" "qa" {
     containers {
       image = var.container_image
 
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+
+      env {
+        name  = "GOOGLE_CLOUD_LOCATION"
+        value = var.region
+      }
+
+      env {
+        name  = "GEMINI_MODEL"
+        value = var.gemini_model
+      }
+
+      env {
+        name  = "VERTEX_GEMINI_LOCATION"
+        value = var.gemini_location
+      }
+
       ports {
         container_port = 8080
       }
@@ -85,6 +116,7 @@ resource "google_cloud_run_v2_service" "qa" {
   depends_on = [
     google_project_service.required["run.googleapis.com"],
     google_artifact_registry_repository.images,
+    google_project_iam_member.runtime_vertex_user,
   ]
 
   lifecycle {

@@ -1,4 +1,4 @@
-"""Single-request Gemini adapter. No tools, hidden history or SDK retries."""
+"""Single-request Vertex AI Gemini adapter. No tools or SDK retries."""
 
 import os
 
@@ -9,17 +9,28 @@ from polar_assistant.application.inference_contracts import InferenceReply, Infe
 
 
 class GeminiInferenceGateway:
-    def __init__(self, model: str = "gemini-3.8-flash"):
-        self.model = model
+    """Model boundary authenticated by Cloud Run's workload identity.
+
+    The service never reads a Gemini Developer API key. In Cloud Run, the
+    attached service account supplies Application Default Credentials to Vertex
+    AI; local callers must provide normal Google ADC and the project variables.
+    """
+
+    def __init__(self, model: str | None = None):
+        self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
     def _client(self):
-        key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-        if not key:
-            raise RuntimeError("GEMINI_KEY_MISSING")
+        project = os.getenv("GOOGLE_CLOUD_PROJECT", "").strip()
+        if not project:
+            raise RuntimeError("VERTEX_PROJECT_MISSING")
         return genai.Client(
-            api_key=key, vertexai=False,
+            vertexai=True,
+            project=project,
+            location=os.getenv("VERTEX_GEMINI_LOCATION", "global"),
             http_options=types.HttpOptions(
-                timeout=30000, retry_options=types.HttpRetryOptions(attempts=1),
+                api_version="v1",
+                timeout=30000,
+                retry_options=types.HttpRetryOptions(attempts=1),
             ),
         )
 

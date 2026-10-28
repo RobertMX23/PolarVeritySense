@@ -21,7 +21,7 @@ archivos de proyecto. El procedimiento se mantiene en
 [`IAP_DIRECT_ARCHITECTURE.md`](../infra/terraform/IAP_DIRECT_ARCHITECTURE.md).
 
 La facturación está vinculada y los servicios Cloud Run, Cloud Build, Artifact
-Registry y Secret Manager están habilitados. La revisión
+Registry, Secret Manager y Vertex AI están habilitados. La revisión
 `polar-sport-assistant-00003-rr5` recibe 100% del tráfico desde la imagen
 inmutable `sha256:f364a476385450d6e280a52430b2b89e97e926ea295473dfaa4bb9b8e7b156dc`.
 La imagen inicia ADK 2.12.0 con Python 3.13.18 y el mismo
@@ -40,9 +40,9 @@ prueba integrada de recomendaciones.
 | Capacidad | 1 CPU, 512 MiB, mínimo 0, máximo 1 instancia, concurrencia 1 |
 | Peticiones | Puerto 8080; timeout 300 segundos |
 | Imagen | Linux amd64; usuario sin privilegios; mismo `root_agent` |
-| Modelos | Gemini configurado por la aplicación; máximo 3 generaciones por caso |
+| Modelos | Vertex AI: `gemini-3.8-flash` mediante endpoint `global`; máximo 3 generaciones por caso |
 | Artefactos | Artifact Registry privado: `polar-assistant` |
-| Credencial Gemini | Secret Manager habilitado, sin secreto creado ni acceso concedido |
+| Credencial Gemini | Application Default Credentials de `polar-sport-runtime`; sin API key ni secreto montado |
 | FIT | No se copió ninguno. Si no existe un montaje autorizado, usa dos sesiones sintéticas no personales etiquetadas como demo; un bucket privado y montaje de sólo lectura siguen requiriendo autorización. |
 | Sesiones | SQLite en `/tmp/polar-adk`; efímeras en esta prueba |
 | Auditoría | Simulación; exportar la evidencia antes de que termine la instancia |
@@ -84,22 +84,23 @@ Las seis dependencias directas se fijan en `requirements.txt`; las transitivas
 y la etiqueta de la imagen base pueden cambiar en una futura reconstrucción.
 Se debe conservar el digest de la imagen efectivamente desplegada.
 
-## Próxima prueba integrada, con autorización específica
+## Inferencia integrada sin claves personales
 
-1. Guardar la clave directamente en Secret Manager sin imprimirla y conceder
-   lectura sólo a `polar-sport-runtime`.
-2. Copiar únicamente los FIT autorizados a un bucket privado y conceder al
-   runtime lectura de esos objetos. No incorporarlos a la imagen.
-3. Crear una revisión nueva con el secreto y el montaje explícitos. Conservar el
-   digest de la imagen y la configuración de revisión como evidencia.
-4. Abrir un caso cloud nuevo y ejecutar el flujo completo. La aprobación del
-   caso local anterior no autoriza el caso cloud.
+La revisión de QA invoca Vertex AI con la identidad de carga de Cloud Run. El
+módulo Terraform habilita `aiplatform.googleapis.com`, concede sólo
+`roles/aiplatform.user` a `polar-sport-runtime` y fija el proyecto, región y
+modelo de forma explícita. No existe una clave de Gemini en Secret Manager,
+variables de entorno ni imagen.
 
-La autorización de infraestructura no cubre estos cuatro pasos ni el envío de
-información biométrica a este destino. Si se autoriza la prueba con datos
-reales, guardar la clave directamente en Secret Manager sin imprimirla; copiar
-solamente los FIT requeridos al bucket privado y otorgar al runtime lectura del
-secreto y de esos objetos.
+La demo cloud sigue usando sesiones sintéticas y no personales. Si se autoriza
+una prueba con FIT reales, copiar únicamente los archivos autorizados a un
+bucket privado y conceder al runtime lectura de esos objetos. No incorporarlos
+a la imagen ni reutilizar la aprobación de un caso anterior.
+
+Cloud Run permanece en `us-central1`. El modelo se invoca desde la ubicación
+Vertex `global`, que es la ubicación publicada para `gemini-3.8-flash`;
+esa diferencia se declara con `VERTEX_GEMINI_LOCATION` y no cambia la región
+del servicio ni del almacenamiento.
 
 ## Referencia de despliegue reproducible
 

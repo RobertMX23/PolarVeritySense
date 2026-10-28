@@ -2,19 +2,20 @@
 
 Este módulo adopta y administra el entorno privado de QA existente:
 
-- APIs de Cloud Run, Cloud Build, Artifact Registry, Secret Manager y Storage.
+- APIs de Cloud Run, Cloud Build, Artifact Registry, Secret Manager, Storage y Vertex AI.
 - Registro Docker privado `polar-assistant`.
 - Cuenta de ejecución `polar-sport-runtime`, sin claves administradas por el
-  usuario.
+  usuario. Sólo recibe `roles/aiplatform.user` para usar Gemini por Vertex AI.
 - Servicio Cloud Run privado, con una instancia máxima, concurrencia uno,
   1 CPU, 512 MiB y una imagen por digest.
 - IAP directo opcional. Al habilitarlo, la URL `run.app` muestra el inicio de
   sesión de Google antes de llegar al contenedor; no crea un balanceador, IP,
   dominio ni una política pública.
 
-No administra la vinculación de facturación, secretos Gemini, buckets de FIT ni
-objetos biométricos. Esas operaciones tienen autorización y ciclo de vida
-separados. Tampoco publica una política `allUsers` o
+No administra la vinculación de facturación, claves Gemini, buckets de FIT ni
+objetos biométricos. La inferencia usa credenciales predeterminadas de la cuenta
+de ejecución y no requiere un secreto. Los FIT conservan su autorización y ciclo
+de vida separados. Tampoco publica una política `allUsers` o
 `allAuthenticatedUsers`; `service_invokers` queda vacío por defecto.
 
 ## Acceso web con Google SSO

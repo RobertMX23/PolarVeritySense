@@ -32,6 +32,28 @@ variable "container_image" {
   type        = string
 }
 
+variable "gemini_model" {
+  description = "Stable Vertex AI Gemini model used by the bounded inference gateway."
+  type        = string
+  default     = "gemini-3.8-flash"
+
+  validation {
+    condition     = length(trimspace(var.gemini_model)) > 0
+    error_message = "gemini_model must name a Vertex AI model."
+  }
+}
+
+variable "gemini_location" {
+  description = "Vertex AI location for the selected Gemini model; this can differ from the Cloud Run region."
+  type        = string
+  default     = "global"
+
+  validation {
+    condition     = length(trimspace(var.gemini_location)) > 0
+    error_message = "gemini_location must be a Vertex AI location."
+  }
+}
+
 variable "service_invokers" {
   description = "IAM principals allowed to invoke the private service, such as user:name@example.com. Empty keeps access at inherited project IAM only."
   type        = set(string)
