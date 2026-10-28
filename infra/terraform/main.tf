@@ -4,6 +4,7 @@ locals {
     "aiplatform.googleapis.com",
     "cloudbuild.googleapis.com",
     "iap.googleapis.com",
+    "logging.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
     "storage.googleapis.com",

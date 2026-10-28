@@ -2,7 +2,8 @@
 
 Este módulo adopta y administra el entorno privado de QA existente:
 
-- APIs de Cloud Run, Cloud Build, Artifact Registry, Secret Manager, Storage y Vertex AI.
+- APIs de Cloud Run, Cloud Build, Cloud Logging, Artifact Registry, Secret Manager,
+  Storage y Vertex AI.
 - Registro Docker privado `polar-assistant`.
 - Cuenta de ejecución `polar-sport-runtime`, sin claves administradas por el
   usuario. Sólo recibe `roles/aiplatform.user` para usar Gemini por Vertex AI.
