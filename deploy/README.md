@@ -22,9 +22,9 @@ archivos de proyecto. El procedimiento se mantiene en
 
 La facturación está vinculada y los servicios Cloud Run, Cloud Build, Artifact
 Registry, Secret Manager, Cloud Logging y Vertex AI están habilitados. La
-revisión vigente `polar-sport-assistant-00007-x97` recibe 100% del tráfico
+revisión vigente `polar-sport-assistant-00008-g7l` recibe 100% del tráfico
 desde la imagen inmutable
-`sha256:31c2ddc1979a3f7e6310d698c81228c09d2451d4d4347940b342506b9e0b231d`.
+`sha256:8b5acb79390bda751b12f75f9f6e081db4e75be2541ddfba2670dee7cd311b52`.
 La imagen inicia ADK 2.12.0 con Python 3.13.18 y el mismo
 `SportAssistantRoot`.
 
