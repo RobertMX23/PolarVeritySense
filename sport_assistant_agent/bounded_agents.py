@@ -53,6 +53,13 @@ def is_welcome_message(text: str) -> bool:
     return normalized in {"", "hola", "buen dia", "buenos dias", "buenas tardes", "buenas noches", "hello", "hi"}
 
 
+def requests_latest_session_summary(text: str) -> bool:
+    normalized = _normalize_user_text(text).strip("!¡?. ,")
+    return normalized in {"1", "ultima sesion", "informacion principal de la ultima sesion"} or (
+        "ultima sesion" in normalized and any(word in normalized for word in ("informacion", "resumen", "recordar", "ver"))
+    )
+
+
 def welcome_message() -> str:
     return (
         "Bienvenido al asistente deportivo. Aún no analizaré datos ni haré una recomendación.\n"
@@ -72,6 +79,23 @@ def waiting_for_intent_case(policy: InferencePolicy) -> dict:
         "termination_reason": "WAITING_FOR_USER_INTENT",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def latest_session_summary(case: dict, telemetry: dict, metrics: dict) -> str:
+    source = telemetry.get("source", "fuente configurada")
+    source_note = (
+        "La fuente disponible es una demostración sintética, no una sesión personal."
+        if source == "synthetic_cloud_demo" else "La fuente corresponde a la sesión disponible configurada."
+    )
+    return (
+        "Resumen de la última sesión disponible:\n"
+        f"• Modalidad: {telemetry.get('sport') or 'no disponible'}\n"
+        f"• Duración: {telemetry.get('duration_seconds') or 'no disponible'} segundos\n"
+        f"• FC media: {metrics.get('mean_hr_bpm') or 'no disponible'} ppm\n"
+        f"• FC máxima: {metrics.get('max_hr_bpm') or 'no disponible'} ppm\n"
+        f"• Fuente: {source}. {source_note}\n"
+        "No se generó recomendación ni se aplicó ningún cambio. Puedes pedir una comparación o una recomendación orientativa en otro caso."
+    )
 
 
 def blocked_case(case, reason):
@@ -216,6 +240,10 @@ class GovernedWorkflowAgent(BaseAgent):
             if is_welcome_message(text):
                 yield message_event(self, ctx, welcome_message())
                 return
+            if requests_latest_session_summary(text):
+                async for event in self._run_latest_session_summary(ctx, text):
+                    yield event
+                return
             # The next substantive user message starts a real case. The
             # welcome state is not an analysed session and is not audited as one.
             previous = None
@@ -268,6 +296,36 @@ class GovernedWorkflowAgent(BaseAgent):
             yield message_event(self, ctx, "Caso bloqueado: " + case["termination_reason"] + ". No se aplicó ningún ajuste.")
         else:
             yield message_event(self, ctx, case["final_text"])
+
+    async def _run_latest_session_summary(self, ctx, text):
+        """Show existing telemetry without opening a recommendation workflow."""
+        case = {
+            "case_id": uuid4().hex[:12], "status": "RUNNING", "calls_used": 0,
+            "calls_remaining": self.policy.max_calls, "attempts": [], "user_context": text,
+            "max_input_tokens": self.policy.max_input_tokens, "max_calls": self.policy.max_calls,
+            "termination_reason": None, "created_at": datetime.now(timezone.utc).isoformat(),
+            "intent": "LAST_SESSION_SUMMARY",
+        }
+        delta = {key: None for key in (
+            "raw_polar_telemetry", "biometric_metrics", "session_comparison", "comparison_metrics",
+            "workflow_decision", "proposed_adjustment", "execution_audit_log",
+        )}
+        yield state_event(self, ctx, **delta, inference_case=case)
+        ingestion = next(agent for agent in self.sub_agents if agent.name == "TelemetryIngestion")
+        async for event in ingestion.run_async(ctx):
+            yield event
+        case = deepcopy(ctx.session.state["inference_case"])
+        if case["status"] == "BLOCKED":
+            yield message_event(self, ctx, "No fue posible obtener la última sesión disponible. No se aplicó ningún ajuste.")
+            return
+        summary = latest_session_summary(
+            case,
+            ctx.session.state.get("raw_polar_telemetry", {}),
+            ctx.session.state.get("biometric_metrics", {}),
+        )
+        case.update(status="COMPLETED_SUMMARY", termination_reason="LAST_SESSION_SUMMARY", final_text=summary)
+        yield state_event(self, ctx, inference_case=case)
+        yield message_event(self, ctx, summary)
 
     async def _follow_up(self, ctx, previous, text):
         case = deepcopy(previous)

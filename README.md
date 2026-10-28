@@ -44,8 +44,9 @@ El prompt de implementación controlada está en
 
 Un saludo breve, por ejemplo `hola`, deja la sesión en `AWAITING_INTENT`.
 El asistente ofrece revisar la última sesión disponible, comparar sesiones o
-pedir una recomendación y espera una segunda respuesta. No carga telemetría ni
-llama a Gemini hasta que el usuario indica su objetivo.
+pedir una recomendación y espera una segunda respuesta. La opción `1` usa
+Python para devolver el resumen de la sesión disponible, sin Gemini; las demás
+respuestas inician el caso acotado.
 
 ## Pruebas sin datos personales
 
