@@ -3,7 +3,7 @@ region     = "us-central1"
 
 # Pin the image that has been tested. Replace only with a new digest after its
 # build and local validation are recorded.
-container_image = "us-central1-docker.pkg.dev/polar-verity-robertmx23-2026/polar-assistant/sport-assistant@sha256:bd952e4c6c74eb5d8db9e0398d64904deaf526bb2ca9d32e35f51d173054f24d"
+container_image = "us-central1-docker.pkg.dev/polar-verity-robertmx23-2026/polar-assistant/sport-assistant@sha256:f364a476385450d6e280a52430b2b89e97e926ea295473dfaa4bb9b8e7b156dc"
 
 # Keep this empty unless access must be granted at service level. Never use
 # allUsers or allAuthenticatedUsers for this QA service.

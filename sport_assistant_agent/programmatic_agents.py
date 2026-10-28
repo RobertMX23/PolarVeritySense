@@ -18,17 +18,70 @@ from polar_assistant.domain.entities import BiometricMetrics, ExerciseSession
 from polar_assistant.domain.metrics import calculate_metrics
 
 
+def _synthetic_cloud_demo_sessions() -> tuple[ExerciseSession, ExerciseSession]:
+    """Return non-personal evidence when Cloud Run has no approved FIT mount."""
+    reference = ExerciseSession(
+        exercise_id="synthetic-reference-hiit",
+        start_time="2026-01-01T08:00:00Z",
+        device="Polar Verity Sense (synthetic demo)",
+        sport="HIIT",
+        duration_seconds=1_800,
+        heart_rate_average=144,
+        heart_rate_maximum=171,
+        heart_rate_zones=(
+            {"index": 2, "in_zone": "PT12M"},
+            {"index": 3, "in_zone": "PT14M"},
+            {"index": 4, "in_zone": "PT4M"},
+        ),
+        heart_rate_samples=tuple([132] * 20 + [145] * 20 + [151] * 20),
+    )
+    candidate = ExerciseSession(
+        exercise_id="synthetic-candidate-treadmill",
+        start_time="2026-01-02T08:00:00Z",
+        device="Polar Verity Sense (synthetic demo)",
+        sport="TREADMILL_RUNNING",
+        duration_seconds=2_400,
+        heart_rate_average=141,
+        heart_rate_maximum=164,
+        heart_rate_zones=(
+            {"index": 1, "in_zone": "PT8M"},
+            {"index": 2, "in_zone": "PT22M"},
+            {"index": 3, "in_zone": "PT10M"},
+        ),
+        heart_rate_samples=tuple([135] * 20 + [141] * 20 + [147] * 20),
+    )
+    return reference, candidate
+
+
+def _load_demo_sessions_for_runtime() -> tuple[ExerciseSession, ExerciseSession, str]:
+    """Prefer approved local FIT evidence; keep Cloud Run usable without it."""
+    try:
+        reference, candidate = _load_demo_sessions()
+        return reference, candidate, "local_real_fit"
+    except FileNotFoundError:
+        reference, candidate = _synthetic_cloud_demo_sessions()
+        return reference, candidate, "synthetic_cloud_demo"
+
+
 def prepare_ingestion(state: dict, source: str) -> dict:
     work = SimpleNamespace(state={})
     if source == "accesslink":
         analyze_exercise_tool(state.get("requested_exercise_id"), work)
     else:
-        _, candidate = _load_demo_sessions()
+        _, candidate, demo_source = _load_demo_sessions_for_runtime()
+        summary = _session_summary(candidate)
+        if demo_source == "synthetic_cloud_demo":
+            summary["source"] = demo_source
         work.state = {
-            "raw_polar_telemetry": _session_summary(candidate),
+            "raw_polar_telemetry": summary,
             "biometric_metrics": asdict(calculate_metrics(candidate)),
             "domain_events": [{"event_type": "MetricsCalculated", "session_id": candidate.exercise_id}],
-            "demo_mode": {"enabled": True, "network_called": False, "source": "local_real_fit"},
+            "demo_mode": {
+                "enabled": True,
+                "network_called": False,
+                "source": demo_source,
+                "contains_personal_telemetry": False if demo_source == "synthetic_cloud_demo" else None,
+            },
         }
     # This is an upstream, validated flag, NOT a medical classifier.
     if state.get("critical_safety_flag") is True:
@@ -37,7 +90,7 @@ def prepare_ingestion(state: dict, source: str) -> dict:
 
 
 def prepare_comparison(state: dict, source: str) -> dict:
-    first, second = _load_demo_sessions()
+    first, second, _ = _load_demo_sessions_for_runtime()
     summary = state["raw_polar_telemetry"]
     reference = second if source == "accesslink" and second.exercise_id != summary["exercise_id"] else first
     candidate = ExerciseSession(

@@ -22,8 +22,8 @@ archivos de proyecto. El procedimiento se mantiene en
 
 La facturación está vinculada y los servicios Cloud Run, Cloud Build, Artifact
 Registry y Secret Manager están habilitados. La revisión
-`polar-sport-assistant-00002-4k5` recibe 100% del tráfico desde la imagen
-inmutable `sha256:bd952e4c6c74eb5d8db9e0398d64904deaf526bb2ca9d32e35f51d173054f24d`.
+`polar-sport-assistant-00003-rr5` recibe 100% del tráfico desde la imagen
+inmutable `sha256:f364a476385450d6e280a52430b2b89e97e926ea295473dfaa4bb9b8e7b156dc`.
 La imagen inicia ADK 2.12.0 con Python 3.13.18 y el mismo
 `SportAssistantRoot`.
 
@@ -43,13 +43,22 @@ prueba integrada de recomendaciones.
 | Modelos | Gemini configurado por la aplicación; máximo 3 generaciones por caso |
 | Artefactos | Artifact Registry privado: `polar-assistant` |
 | Credencial Gemini | Secret Manager habilitado, sin secreto creado ni acceso concedido |
-| FIT | No se copió ninguno; futuro bucket privado y montaje de sólo lectura requieren autorización |
+| FIT | No se copió ninguno. Si no existe un montaje autorizado, usa dos sesiones sintéticas no personales etiquetadas como demo; un bucket privado y montaje de sólo lectura siguen requiriendo autorización. |
 | Sesiones | SQLite en `/tmp/polar-adk`; efímeras en esta prueba |
 | Auditoría | Simulación; exportar la evidencia antes de que termine la instancia |
 
 Los archivos FIT, `.env`, reportes, bases SQLite y el historial Git no forman
 parte del contexto de construcción. `.dockerignore` y `.gcloudignore` usan una
 lista explícita de archivos permitidos.
+
+## Demo cloud sin FIT
+
+La imagen no contiene FIT ni intenta descargarlos. En ausencia de
+`POLAR_FIT_DIR`, el flujo demo crea dos sesiones sintéticas con métricas
+deterministas y marca el estado como `synthetic_cloud_demo`. Sirve para validar
+ADK, IAP y el recorrido de propuesta sin atribuir resultados a una persona. Un
+montaje de FIT aprobado conserva la ruta de evidencia local original; AccessLink
+requiere su configuración y autorización separadas.
 
 ## Operación como código
 
