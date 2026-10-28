@@ -40,6 +40,13 @@ La referencia de grafos y la tabla cruzada están en
 El prompt de implementación controlada está en
 [ADK_GRAPH_IMPLEMENTATION_PROMPT.md](ADK_GRAPH_IMPLEMENTATION_PROMPT.md).
 
+## Inicio de conversación
+
+Un saludo breve, por ejemplo `hola`, deja la sesión en `AWAITING_INTENT`.
+El asistente ofrece revisar la última sesión disponible, comparar sesiones o
+pedir una recomendación y espera una segunda respuesta. No carga telemetría ni
+llama a Gemini hasta que el usuario indica su objetivo.
+
 ## Pruebas sin datos personales
 
 ```powershell
