@@ -21,16 +21,18 @@ archivos de proyecto. El procedimiento se mantiene en
 [`IAP_DIRECT_ARCHITECTURE.md`](../infra/terraform/IAP_DIRECT_ARCHITECTURE.md).
 
 La facturación está vinculada y los servicios Cloud Run, Cloud Build, Artifact
-Registry, Secret Manager y Vertex AI están habilitados. La revisión
-`polar-sport-assistant-00003-rr5` recibe 100% del tráfico desde la imagen
-inmutable `sha256:f364a476385450d6e280a52430b2b89e97e926ea295473dfaa4bb9b8e7b156dc`.
+Registry, Secret Manager, Cloud Logging y Vertex AI están habilitados. La
+revisión vigente `polar-sport-assistant-00007-x97` recibe 100% del tráfico
+desde la imagen inmutable
+`sha256:31c2ddc1979a3f7e6310d698c81228c09d2451d4d4347940b342506b9e0b231d`.
 La imagen inicia ADK 2.12.0 con Python 3.13.18 y el mismo
 `SportAssistantRoot`.
 
 La comprobación IAM contra el servicio devolvió HTTP 200 para `/version`,
-`/list-apps` y el grafo de la aplicación. No ejecutó Gemini, no incluyó una
-clave ni montó FIT. Es una prueba de disponibilidad y de autenticación, no una
-prueba integrada de recomendaciones.
+`/list-apps` y el grafo de la aplicación. La prueba integrada de QA usa
+sesiones sintéticas y la identidad ADC del runtime para llegar a Vertex AI; no
+monta FIT ni guarda una API key. La propuesta permanece sujeta a aprobación y
+no aplica cambios externos.
 
 ## Configuración vigente
 
