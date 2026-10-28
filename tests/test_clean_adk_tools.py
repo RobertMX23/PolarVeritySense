@@ -19,6 +19,29 @@ def test_full_workflow_contains_deterministic_route_dispatcher():
     assert full_workflow_agent.find_agent("DataQualityReviewResponse") is not None
 
 
+def test_workflow_exposes_the_documented_ten_node_hierarchy():
+    names = {
+        "SportAssistantRoot",
+        "TelemetryIngestion",
+        "SessionComparisonPreparation",
+        "WorkflowRouteDispatcher",
+        "SafetyEscalationResponse",
+        "DataQualityReviewResponse",
+        "RecommendationAndApproval",
+        "PhysiologyAnalystAgent",
+        "SafetyCriticAgent",
+        "ProposalRefinementAgent",
+    }
+    def walk(agent):
+        yield agent
+        for child in agent.sub_agents:
+            yield from walk(child)
+
+    discovered = {agent.name: agent for agent in walk(root_agent)}
+    assert set(discovered) == names
+    assert all(agent.description for agent in discovered.values())
+
+
 def test_demo_fit_files_can_be_mounted_outside_the_application(monkeypatch, tmp_path):
     from sport_assistant_agent import clean_adk_tools
 

@@ -29,6 +29,13 @@ Adopta el servicio privado ya desplegado, el registro de imágenes, las APIs y
 la cuenta de ejecución. El estado vive en un bucket privado versionado; los
 archivos de estado, `backend.hcl` y valores locales no se publican.
 
+## Flujo ADK 2.x
+
+La comparación con los patrones oficiales de ADK 2.x está en
+[ADK_2_WORKFLOW_ALIGNMENT.md](ADK_2_WORKFLOW_ALIGNMENT.md). El flujo conserva
+agentes personalizados para aplicar rutas condicionales, límite de tres
+generaciones y aprobación humana sin delegación implícita.
+
 ## Pruebas sin datos personales
 
 ```powershell

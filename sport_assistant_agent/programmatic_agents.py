@@ -131,5 +131,6 @@ class ProgrammaticPreparationAgent(BaseAgent):
             delta = {"inference_case": case}
         yield Event(
             author=self.name, invocation_id=ctx.invocation_id,
+            branch=ctx.branch,
             actions=EventActions(state_delta=delta),
         )

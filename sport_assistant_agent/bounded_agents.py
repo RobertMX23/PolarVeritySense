@@ -25,12 +25,12 @@ from polar_assistant.application.inference_policy import (
 
 
 def state_event(agent, ctx, **delta):
-    return Event(author=agent.name, invocation_id=ctx.invocation_id,
+    return Event(author=agent.name, invocation_id=ctx.invocation_id, branch=ctx.branch,
                  actions=EventActions(state_delta=deepcopy(delta)))
 
 
 def message_event(agent, ctx, text):
-    return Event(author=agent.name, invocation_id=ctx.invocation_id,
+    return Event(author=agent.name, invocation_id=ctx.invocation_id, branch=ctx.branch,
                  content=types.Content(role="model", parts=[types.Part(text=text)]))
 
 

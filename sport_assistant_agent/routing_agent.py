@@ -40,7 +40,6 @@ class WorkflowRouteDispatcher(BaseAgent):
 
     async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[Event, None]:
         decision = select_workflow_decision_from_state(ctx.session.state)
-        ctx.session.state["workflow_decision"] = decision
         yield Event(
             invocation_id=ctx.invocation_id,
             author=self.name,
