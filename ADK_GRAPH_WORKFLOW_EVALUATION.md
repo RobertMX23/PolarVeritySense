@@ -110,3 +110,6 @@ rutas de bloqueo actuales.
 Una migración a grafo debe empezar como prototipo y conservar estas
 invariantes: cero llamadas de modelo en rutas de seguridad/calidad, máximo tres
 generaciones por caso, refinamiento único y aprobación ligada a la propuesta.
+
+El prompt para construir ese prototipo de manera controlada está en
+[`ADK_GRAPH_IMPLEMENTATION_PROMPT.md`](ADK_GRAPH_IMPLEMENTATION_PROMPT.md).

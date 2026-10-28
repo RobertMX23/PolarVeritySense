@@ -37,6 +37,8 @@ agentes personalizados para aplicar rutas condicionales, límite de tres
 generaciones y aprobación humana sin delegación implícita.
 La referencia de grafos y la tabla cruzada están en
 [ADK_GRAPH_WORKFLOW_EVALUATION.md](ADK_GRAPH_WORKFLOW_EVALUATION.md).
+El prompt de implementación controlada está en
+[ADK_GRAPH_IMPLEMENTATION_PROMPT.md](ADK_GRAPH_IMPLEMENTATION_PROMPT.md).
 
 ## Pruebas sin datos personales
 
