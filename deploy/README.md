@@ -43,6 +43,7 @@ prueba integrada de recomendaciones.
 | Modelos | Vertex AI: `gemini-3.8-flash` mediante endpoint `global`; máximo 3 generaciones por caso |
 | Artefactos | Artifact Registry privado: `polar-assistant` |
 | Credencial Gemini | Application Default Credentials de `polar-sport-runtime`; sin API key ni secreto montado |
+| Modo ADK | `GOOGLE_GENAI_USE_ENTERPRISE=TRUE`, compatible con Google Cloud Agent Platform |
 | FIT | No se copió ninguno. Si no existe un montaje autorizado, usa dos sesiones sintéticas no personales etiquetadas como demo; un bucket privado y montaje de sólo lectura siguen requiriendo autorización. |
 | Sesiones | SQLite en `/tmp/polar-adk`; efímeras en esta prueba |
 | Auditoría | Simulación; exportar la evidencia antes de que termine la instancia |

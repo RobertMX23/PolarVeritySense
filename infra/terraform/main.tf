@@ -89,6 +89,13 @@ resource "google_cloud_run_v2_service" "qa" {
         value = var.region
       }
 
+      # Current ADK name for Google Cloud Agent Platform mode. The gateway also
+      # sets Vertex mode explicitly, keeping this compatible with ADK upgrades.
+      env {
+        name  = "GOOGLE_GENAI_USE_ENTERPRISE"
+        value = "TRUE"
+      }
+
       env {
         name  = "GEMINI_MODEL"
         value = var.gemini_model
