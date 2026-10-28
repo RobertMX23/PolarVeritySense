@@ -5,6 +5,7 @@ generation per attempt; there is no AutoFlow, tool-call or summarization loop.
 """
 
 import threading
+import unicodedata
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
@@ -39,6 +40,38 @@ def user_text(ctx) -> str:
     if not content or content.role != "user":
         return ""
     return "".join(part.text or "" for part in content.parts or [])
+
+
+def _normalize_user_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text.casefold())
+    return " ".join("".join(char for char in normalized if not unicodedata.combining(char)).split())
+
+
+def is_welcome_message(text: str) -> bool:
+    """Recognize a greeting-only turn without treating it as training context."""
+    normalized = _normalize_user_text(text).strip("!¡?. ,")
+    return normalized in {"", "hola", "buen dia", "buenos dias", "buenas tardes", "buenas noches", "hello", "hi"}
+
+
+def welcome_message() -> str:
+    return (
+        "Bienvenido al asistente deportivo. Aún no analizaré datos ni haré una recomendación.\n"
+        "¿Qué quieres revisar?\n"
+        "1. La información principal de la última sesión disponible.\n"
+        "2. La comparación entre sesiones disponibles.\n"
+        "3. Una recomendación orientativa de recuperación o carga.\n"
+        "Responde con una opción o describe tu objetivo. Esperaré tu respuesta antes de abrir un caso."
+    )
+
+
+def waiting_for_intent_case(policy: InferencePolicy) -> dict:
+    return {
+        "case_id": uuid4().hex[:12], "status": "AWAITING_INTENT", "calls_used": 0,
+        "calls_remaining": policy.max_calls, "attempts": [], "user_context": "",
+        "max_input_tokens": policy.max_input_tokens, "max_calls": policy.max_calls,
+        "termination_reason": "WAITING_FOR_USER_INTENT",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def blocked_case(case, reason):
@@ -178,6 +211,20 @@ class GovernedWorkflowAgent(BaseAgent):
         text = user_text(ctx).strip()
         previous = ctx.session.state.get("inference_case")
         new_case = text == "/nuevo_caso" or text.startswith("/nuevo_caso ")
+
+        if previous and previous.get("status") == "AWAITING_INTENT":
+            if is_welcome_message(text):
+                yield message_event(self, ctx, welcome_message())
+                return
+            # The next substantive user message starts a real case. The
+            # welcome state is not an analysed session and is not audited as one.
+            previous = None
+
+        if not previous and not new_case and is_welcome_message(text):
+            yield state_event(self, ctx, inference_case=waiting_for_intent_case(self.policy))
+            yield message_event(self, ctx, welcome_message())
+            return
+
         if previous and not new_case:
             async for event in self._follow_up(ctx, previous, text):
                 yield event

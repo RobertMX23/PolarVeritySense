@@ -46,6 +46,7 @@ no aplica cambios externos.
 | Artefactos | Artifact Registry privado: `polar-assistant` |
 | Credencial Gemini | Application Default Credentials de `polar-sport-runtime`; sin API key ni secreto montado |
 | Modo ADK | `GOOGLE_GENAI_USE_ENTERPRISE=TRUE`, compatible con Google Cloud Agent Platform |
+| Inicio de conversación | Un saludo entra en `AWAITING_INTENT`; no carga telemetría ni consume Gemini hasta recibir el objetivo del usuario |
 | FIT | No se copió ninguno. Si no existe un montaje autorizado, usa dos sesiones sintéticas no personales etiquetadas como demo; un bucket privado y montaje de sólo lectura siguen requiriendo autorización. |
 | Sesiones | SQLite en `/tmp/polar-adk`; efímeras en esta prueba |
 | Auditoría | Simulación; exportar la evidencia antes de que termine la instancia |
