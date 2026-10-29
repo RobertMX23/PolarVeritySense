@@ -15,6 +15,24 @@ médico ni una aplicación móvil.
 | Zonas | Se conservaron 25 períodos de zona con límites, duración y calidad de cobertura. | La cobertura de las cinco sesiones es `partial`; nunca se debe completar con valores inventados. |
 | Seguridad | Cuenta runtime de sólo lectura y cuenta `polar-sport-sync` de escritura, ambas sin claves gestionadas por usuario. | El sincronizador todavía no está desplegado. |
 
+## Tabla cruzada del alcance y avance
+
+| Línea de trabajo | Alcance original | Estado real | Evidencia actual | Siguiente punto que la desbloquea | Documento de referencia |
+|---|---|---|---|---|---|
+| Fundamentos Python, Pydantic y pruebas | Fase 0 | Completado | `root_agent`, contratos y 93 pruebas aprobadas. | Mantener regresiones en cada entrega. | `PROJECT_CHECKLIST.md`, `TESTING.md` |
+| Demo post-entrenamiento y gobernanza | Fase 1 | Completado para demo | Cálculo determinista, máximo de tres llamadas, crítico y HITL con auditoría simulada. | No extender a cambios externos sin nueva aprobación. | `PROJECT_SCOPE_AND_DEMO_CHECKLIST.md`, `PROJECT_STATUS_2026-10-27.md` |
+| Polar AccessLink local | Fase 1 / 3 | Parcial | Cinco sesiones v3 autorizadas y zonas normalizadas. | Consentimiento cloud, renovación y sincronizador keyless. | `DATA_CONNECTION_ARCHITECTURE.md` |
+| Cloud Run privado | Fase 2 / 3.5 | Completado para QA | IAP, ADC, Vertex AI y revisión privada desplegada. | Mantener IAP al publicar la siguiente imagen. | `deploy/README.md` |
+| Inicio guiado ADK Web | Fase 1 / experiencia QA | Completado | `AWAITING_INTENT`; saludo no abre análisis y opción `1` es determinista. | Resolver sujeto autenticado para mostrar datos curados reales. | `README.md`, `TESTING.md` |
+| Firestore curado | Fase 2 | Base verificada | Base Native, permisos mínimos, 5 documentos y 25 períodos de zona leídos tras reintentos. | Identidad interna y repositorio de lectura en runtime. | `DATA_CONNECTION_ARCHITECTURE.md` |
+| Identidad y consentimiento | Fase 2 | Pendiente | IAP autentica acceso web, pero no existe vínculo IAP → `subject_id`. | Definir propietario, consentimiento, revocación y aislamiento. | Este plan, tarea 1 |
+| Consulta Firestore desde el agente | Fase 2 | Pendiente | Contrato y tool acotada existen, pero la imagen no los compone. | Repositorio por `authenticated_subject_id` y pruebas A/B. | Este plan, tarea 2 |
+| Sincronización Polar cloud | Fase 2 | Pendiente | Cuenta `polar-sport-sync` creada sin claves; smoke test usó ADC de operador. | Servicio keyless, OAuth cloud y Secret Manager. | Este plan, tareas 3–4 |
+| Nueva revisión Cloud Run con datos reales | Fase 2 | Pendiente | La revisión activa aún usa `synthetic_cloud_demo`. | Completar identidad, lectura y sincronización; construir por digest. | Este plan, tarea 5 |
+| Operación, coste y QA extremo a extremo | Fase 2 | Parcial | Logs básicos y límites de instancia; faltan alertas específicas y matriz E2E. | Pruebas de aislamiento, consentimiento, reintentos y presupuesto. | Este plan, tarea 6 |
+| BigQuery histórico | Fase 2 posterior | No iniciado intencionalmente | Diseño documental, sin dataset ni tabla. | Validar primero la consulta operativa Firestore. | `DATA_CONNECTION_ARCHITECTURE.md` |
+| BLE, móvil, RAG, Memory Bank y Agent Engine | Fases 3–4 | Fuera de la siguiente entrega | Roadmap únicamente. | Priorización posterior al flujo seguro de datos curados. | `PROJECT_SCOPE_AND_DEMO_CHECKLIST.md` |
+
 ## Orden de trabajo
 
 | Prioridad | Entrega | Rol responsable | Contexto | Instrucciones | Límites (*boundaries*) | Resultado esperado / evidencia |
