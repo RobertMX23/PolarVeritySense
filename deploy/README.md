@@ -48,7 +48,8 @@ no aplica cambios externos.
 | Modo ADK | `GOOGLE_GENAI_USE_ENTERPRISE=TRUE`, compatible con Google Cloud Agent Platform |
 | Inicio de conversación | Un saludo entra en `AWAITING_INTENT`; la opción `1` devuelve un resumen Python de la última sesión disponible sin Gemini y las demás respuestas abren el caso acotado |
 | FIT | No se copió ninguno. Si no existe un montaje autorizado, usa dos sesiones sintéticas no personales etiquetadas como demo; un bucket privado y montaje de sólo lectura siguen requiriendo autorización. |
-| Sesiones | SQLite en `/tmp/polar-adk`; efímeras en esta prueba |
+| Sesiones ADK | SQLite en `/tmp/polar-adk`; efímeras en esta prueba |
+| Firestore | Base Native `(default)` en `us-central1`, creada por Terraform. El runtime puede leer y `polar-sport-sync` puede escribir; la revisión activa aún no la consulta. |
 | Auditoría | Simulación; exportar la evidencia antes de que termine la instancia |
 
 Los archivos FIT, `.env`, reportes, bases SQLite y el historial Git no forman
@@ -103,13 +104,14 @@ a la imagen ni reutilizar la aprobación de un caso anterior.
 
 ## Conexión de datos de producto
 
-La revisión actual no configura Firestore, BigQuery ni un token Polar. Al no
-existir un FIT autorizado, ADK Web devuelve `synthetic_cloud_demo`. La
-arquitectura prevista separa la sincronización con Polar, la consulta operativa
-en Firestore y el histórico analítico en BigQuery; el agente recibe un resumen
-autorizado por un repositorio Python y nunca credenciales ni SQL generado por el
-modelo. Consulta [DATA_CONNECTION_ARCHITECTURE.md](../DATA_CONNECTION_ARCHITECTURE.md)
-antes de habilitar cualquiera de esos recursos.
+Firestore Native está configurado como almacén operativo. La prueba cloud
+verificó cinco sesiones curadas con 25 períodos de zona mediante ADC y sin
+claves de servicio. La revisión activa de Cloud Run todavía devuelve
+`synthetic_cloud_demo`: no compone el repositorio Firestore, no tiene un token
+Polar y no identifica a un sujeto desde IAP. BigQuery tampoco está configurado.
+La siguiente entrega debe desplegar el sincronizador keyless y la consulta por
+`authenticated_subject_id`, sin exponer credenciales ni SQL generado por el
+modelo. Consulta [DATA_CONNECTION_ARCHITECTURE.md](../DATA_CONNECTION_ARCHITECTURE.md).
 
 Cloud Run permanece en `us-central1`. El modelo se invoca desde la ubicación
 Vertex `global`, que es la ubicación publicada para `gemini-3.8-flash`;

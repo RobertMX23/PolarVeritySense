@@ -3,6 +3,7 @@ locals {
     "artifactregistry.googleapis.com",
     "aiplatform.googleapis.com",
     "cloudbuild.googleapis.com",
+    "firestore.googleapis.com",
     "iap.googleapis.com",
     "logging.googleapis.com",
     "run.googleapis.com",
@@ -43,6 +44,49 @@ resource "google_project_iam_member" "runtime_vertex_user" {
   member  = "serviceAccount:${google_service_account.runtime.email}"
 
   depends_on = [google_project_service.required["aiplatform.googleapis.com"]]
+}
+
+# Firestore is the operational store for the curated session summaries. Its
+# location is deliberately the same region as Cloud Run to keep the first data
+# path regional. The database is retained if its Terraform resource is removed.
+resource "google_firestore_database" "curated_sessions" {
+  project          = var.project_id
+  name             = var.firestore_database_id
+  location_id      = var.firestore_location
+  type             = "FIRESTORE_NATIVE"
+  concurrency_mode = "OPTIMISTIC"
+  deletion_policy  = "ABANDON"
+
+  depends_on = [google_project_service.required["firestore.googleapis.com"]]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# The Cloud Run runtime may only read curated records through the repository.
+# A separate identity will later run the Polar synchronizer and perform writes.
+resource "google_service_account" "polar_sync" {
+  project      = var.project_id
+  account_id   = var.sync_service_account_id
+  display_name = "Polar Sport Assistant telemetry synchronizer"
+  description  = "Writes validated, privacy-minimized Polar session summaries to Firestore; no user-managed keys."
+}
+
+resource "google_project_iam_member" "runtime_firestore_viewer" {
+  project = var.project_id
+  role    = "roles/datastore.viewer"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
+
+  depends_on = [google_firestore_database.curated_sessions]
+}
+
+resource "google_project_iam_member" "sync_firestore_user" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.polar_sync.email}"
+
+  depends_on = [google_firestore_database.curated_sessions]
 }
 
 resource "google_cloud_run_v2_service" "qa" {

@@ -20,6 +20,12 @@ Los grupos suman 93. Las siete pruebas más recientes validan el contrato de
 sesión curada, zonas y la consulta v4/v3; no contactan Polar, Firestore ni
 BigQuery.
 
+Además de la suite, el 29 de octubre de 2026 se ejecutó la verificación manual
+`scripts/firestore_curated_smoke.py` contra Firestore Native: cinco sesiones
+AccessLink v3 autorizadas, cinco documentos leídos tras *upserts* idempotentes
+y 25 períodos de zona preservados. No forma parte de `pytest`, porque requiere
+consentimiento Polar y ADC con permiso de escritura.
+
 ## Ejecución
 
 ```powershell

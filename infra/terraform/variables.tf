@@ -27,6 +27,24 @@ variable "runtime_service_account_id" {
   default     = "polar-sport-runtime"
 }
 
+variable "sync_service_account_id" {
+  description = "Short ID for the dedicated identity that synchronizes curated Polar sessions."
+  type        = string
+  default     = "polar-sport-sync"
+}
+
+variable "firestore_database_id" {
+  description = "Firestore database ID used for curated operational session records."
+  type        = string
+  default     = "(default)"
+}
+
+variable "firestore_location" {
+  description = "Regional Firestore location for curated sessions. This location cannot be changed after database creation."
+  type        = string
+  default     = "us-central1"
+}
+
 variable "container_image" {
   description = "Immutable Artifact Registry image digest. Do not use a mutable tag."
   type        = string

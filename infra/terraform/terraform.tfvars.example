@@ -7,6 +7,12 @@ container_image = "us-central1-docker.pkg.dev/polar-verity-robertmx23-2026/polar
 gemini_model    = "gemini-3.8-flash"
 gemini_location = "global"
 
+# Firestore stores only curated session summaries, including zone durations;
+# it does not store raw samples or OAuth tokens. The regional location is a
+# database creation decision and cannot be changed afterwards.
+firestore_database_id = "(default)"
+firestore_location    = "us-central1"
+
 # Keep this empty unless access must be granted at service level. Never use
 # allUsers or allAuthenticatedUsers for this QA service.
 service_invokers = []
