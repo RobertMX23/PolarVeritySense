@@ -208,6 +208,10 @@ analítica si se aprueba el diseño, con permisos mínimos sobre cada recurso.
 
 ## Plan de implementación
 
+**Prioridad actual:** cerrar y evidenciar el recorrido local AccessLink v3 →
+contrato curado → Firestore para el sujeto técnico de prueba. La identidad IAP,
+OAuth cloud multiusuario y la composición en Cloud Run son la entrega posterior.
+
 | Fase | Entregable verificable | No se hace todavía |
 |---|---|---|
 | 0. Gobierno | Consentimiento, sujeto interno, retención y lista de métricas permitidas. | Importar sesiones personales. |

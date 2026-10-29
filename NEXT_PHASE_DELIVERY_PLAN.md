@@ -4,6 +4,19 @@
 **Ámbito:** evolución del entorno privado de QA, no publicación de un producto
 médico ni una aplicación móvil.
 
+## Foco de la siguiente iteración
+
+La iteración se limita a demostrar y endurecer el recorrido controlado
+**Polar AccessLink local → contrato Pydantic curado → Firestore → consulta
+técnica verificable**. Trabajará con la autorización local ya existente y el
+sujeto técnico de prueba; no sustituye todavía la identidad de una persona ni
+convierte la aplicación de Cloud Run en un servicio de datos personales.
+
+OAuth cloud multiusuario, Secret Manager, el vínculo IAP → `subject_id` y el
+despliegue de una imagen que lea Firestore se mantienen como la entrega
+posterior. Son dependencias de producto y seguridad, no requisitos para
+terminar la validación local de datos curados.
+
 ## Punto de partida verificado
 
 | Capacidad | Estado comprobado | Límite vigente |
@@ -21,10 +34,10 @@ médico ni una aplicación móvil.
 |---|---|---|---|---|---|
 | Fundamentos Python, Pydantic y pruebas | Fase 0 | Completado | `root_agent`, contratos y 93 pruebas aprobadas. | Mantener regresiones en cada entrega. | `PROJECT_CHECKLIST.md`, `TESTING.md` |
 | Demo post-entrenamiento y gobernanza | Fase 1 | Completado para demo | Cálculo determinista, máximo de tres llamadas, crítico y HITL con auditoría simulada. | No extender a cambios externos sin nueva aprobación. | `PROJECT_SCOPE_AND_DEMO_CHECKLIST.md`, `PROJECT_STATUS_2026-10-27.md` |
-| Polar AccessLink local | Fase 1 / 3 | Parcial | Cinco sesiones v3 autorizadas y zonas normalizadas. | Consentimiento cloud, renovación y sincronizador keyless. | `DATA_CONNECTION_ARCHITECTURE.md` |
+| Polar AccessLink local | Fase 1 / 3 | Parcial | Cinco sesiones v3 autorizadas y zonas normalizadas. | Repetir lectura, validación, zonas y errores transitorios con la autorización local. | `DATA_CONNECTION_ARCHITECTURE.md` |
 | Cloud Run privado | Fase 2 / 3.5 | Completado para QA | IAP, ADC, Vertex AI y revisión privada desplegada. | Mantener IAP al publicar la siguiente imagen. | `deploy/README.md` |
 | Inicio guiado ADK Web | Fase 1 / experiencia QA | Completado | `AWAITING_INTENT`; saludo no abre análisis y opción `1` es determinista. | Resolver sujeto autenticado para mostrar datos curados reales. | `README.md`, `TESTING.md` |
-| Firestore curado | Fase 2 | Base verificada | Base Native, permisos mínimos, 5 documentos y 25 períodos de zona leídos tras reintentos. | Identidad interna y repositorio de lectura en runtime. | `DATA_CONNECTION_ARCHITECTURE.md` |
+| Firestore curado | Fase 2 | Base verificada | Base Native, permisos mínimos, 5 documentos y 25 períodos de zona leídos tras reintentos. | Repositorio de lectura y consulta técnica para el sujeto de prueba. | `DATA_CONNECTION_ARCHITECTURE.md` |
 | Identidad y consentimiento | Fase 2 | Pendiente | IAP autentica acceso web, pero no existe vínculo IAP → `subject_id`. | Definir propietario, consentimiento, revocación y aislamiento. | Este plan, tarea 1 |
 | Consulta Firestore desde el agente | Fase 2 | Pendiente | Contrato y tool acotada existen, pero la imagen no los compone. | Repositorio por `authenticated_subject_id` y pruebas A/B. | Este plan, tarea 2 |
 | Sincronización Polar cloud | Fase 2 | Pendiente | Cuenta `polar-sport-sync` creada sin claves; smoke test usó ADC de operador. | Servicio keyless, OAuth cloud y Secret Manager. | Este plan, tareas 3–4 |
@@ -37,31 +50,33 @@ médico ni una aplicación móvil.
 
 | Prioridad | Entrega | Rol responsable | Contexto | Instrucciones | Límites (*boundaries*) | Resultado esperado / evidencia |
 |---:|---|---|---|---|---|---|
-| 1 | Identidad interna y consentimiento | Responsable de producto + seguridad | Firestore contiene `ath_local_smoke_2026`; IAP autentica al navegador, pero no existe vínculo con una persona o atleta. | Definir un `subject_id` opaco, una tabla o perfil de vínculo y el ciclo de consentimiento/revocación. Documentar cómo se obtiene la identidad IAP verificada antes de llegar al agente. | No usar correo de Google, `x_user_id` de Polar ni texto del chat como clave de Firestore. No migrar los documentos de prueba a una identidad real. | Especificación aprobada de identidad, diagrama de flujo y pruebas de aislamiento por sujeto. |
-| 2 | Repositorio Firestore de lectura | Ingeniero backend | El contrato `CuratedTrainingSession` y la tool acotada ya existen; Cloud Run posee `roles/datastore.viewer`. | Implementar un repositorio que liste y obtenga la última sesión sólo para el `authenticated_subject_id` verificado. Ordenar por `started_at`, limitar resultados y devolver únicamente la proyección permitida. Añadir dobles de prueba. | El LLM no recibe un cliente Firestore, SQL, identificador de sujeto elegido por el usuario, tokens Polar ni payload crudo. | Pruebas unitarias de orden, ausencia de datos y aislamiento A/B; tool devuelve `NO_CURATED_SESSION` o una sesión del sujeto autenticado. |
-| 3 | Sincronizador Polar keyless | Ingeniero de integraciones | La cuenta `polar-sport-sync` ya tiene escritura Firestore; la prueba actual usa ADC de operador y AccessLink v3 local. | Diseñar y desplegar un proceso de sincronización separado, con ejecución bajo esa cuenta. Tras consentimiento, obtener sesiones, normalizar con Pydantic, hacer *upsert* por `session_id` y registrar procedencia. | No guardar tokens OAuth en Firestore, logs, ADK state, Git ni variables de imagen. No crear claves de cuenta de servicio. No persistir series crudas, ubicación o notas. | Una ejecución programada o manual autenticada que sincroniza un atleta de prueba, con log de conteos y prueba de reintento idempotente. |
-| 4 | Gestión de secretos y OAuth cloud | Seguridad + integraciones | El token local v3 sólo demuestra compatibilidad; no es multiusuario. | Configurar el cliente OAuth de Polar, callback permitido, Secret Manager y renovación. Diseñar la referencia cifrada de token por sujeto y los permisos mínimos del sincronizador. | El runtime interactivo de Cloud Run no puede leer el secreto ni renovar tokens. Ningún secreto va a Terraform state, PR, documentación o `.env` de producción. | Prueba de consentimiento y renovación con secreto en Secret Manager; escaneo de secretos aprobado. |
-| 5 | Composición del agente y nueva revisión Cloud Run | Ingeniero ADK / plataforma | Firestore ya existe, pero la imagen activa usa datos sintéticos. | Conectar el repositorio de lectura a la composición de la aplicación después de que las tareas 1–2 estén aprobadas. Construir imagen inmutable, actualizar sólo su digest en Terraform y desplegar una nueva revisión privada. | No eliminar el fallback `synthetic_cloud_demo`; etiquetar siempre la fuente. No habilitar acceso público ni cambiar IAP. | ADK Web, con un usuario de prueba vinculado, muestra la última sesión curada y sus zonas; sin usuario vinculado mantiene la demo o devuelve estado vacío claro. |
-| 6 | Prueba extremo a extremo y operación | QA + responsable de producto | Deben coexistir rutas demo y real sin mezclar datos. | Ejecutar casos de bienvenida, sesión inexistente, última sesión, comparación, recomendación, rechazo de consentimiento y reintento de sincronización. Medir latencia por etapa y revisar logs. Configurar presupuesto y alertas de facturación. | No medir datos clínicos ni prometer consejo médico. No considerar una respuesta del modelo como evidencia de escritura. | Matriz de pruebas firmada, evidencia de una sesión real curada, tablero/alerta de coste y runbook de incidente. |
-| 7 | Histórico analítico opcional | Ingeniería de datos | Firestore cubre consultas operativas; BigQuery no está creado. | Sólo tras validar valor y retención, crear dataset y tabla particionada para agregados históricos y evaluaciones. | No usar BigQuery en la respuesta interactiva normal; no permitir SQL generado por el modelo. | Diseño de retención, IAM por dataset y prueba de consulta parametrizada. |
+| 1 | Lectura local AccessLink y curación | Ingeniero de integraciones | Hay cinco sesiones v3 autorizadas y el contrato ya preserva zonas y su calidad. | Ejecutar inventario de sólo lectura, normalizar cada sesión mediante `CuratedTrainingSession`, probar zonas incompletas y errores HTTP transitorios. Registrar conteos y procedencia, sin guardar el payload original. | No ampliar el permiso Polar ni mover el token local a cloud. No inferir tiempo de zona ausente como cero. | Reporte reproducible de sesiones, zonas, calidad y errores controlados; pruebas de contrato ampliadas. |
+| 2 | Escritura Firestore curada local | Ingeniero backend + integraciones | La base y los permisos existen; el smoke test ya verificó cinco documentos y 25 períodos de zona. | Repetir el *upsert* desde AccessLink local, validar ID estable, lectura posterior y orden por `started_at` para el sujeto técnico `ath_local_smoke_2026`. | Persistir sólo allowlist curada. No guardar token, payload crudo, muestras, notas, ubicación ni una identidad real. | Ejecución repetible que mantiene el mismo número de documentos tras reintentos y confirma zonas, duración y calidad. |
+| 3 | Repositorio y consulta técnica Firestore | Ingeniero backend | Existe la tool acotada y el runtime posee permiso de lectura, pero la imagen aún no compone el repositorio. | Implementar y probar un repositorio Firestore de lectura para el sujeto técnico explícito de desarrollo; listar, obtener última sesión y devolver la proyección permitida. | Es una herramienta de desarrollo, no una ruta expuesta al chat ni un sustituto de identidad autenticada. El LLM no recibe cliente Firestore ni IDs arbitrarios. | Pruebas de orden, ausencia de datos, aislamiento A/B simulado y lectura de los documentos de prueba. |
+| 4 | Validación local extremo a extremo | QA | Deben coincidir lo leído de AccessLink, lo curado y lo recuperado desde Firestore. | Comparar IDs, fecha, modalidad, FC, cobertura de zonas y períodos antes/después del almacenamiento. Medir duración de lectura, curación, escritura y consulta. | No atribuir la medición local a rendimiento del agente ni a una garantía clínica. | Matriz de evidencia con cinco sesiones, discrepancias cero o explicadas y límites documentados. |
+| 5 | Identidad interna y consentimiento | Responsable de producto + seguridad | Firestore contiene un sujeto técnico y IAP autentica el navegador, sin vínculo de atleta. | Definir `subject_id` opaco, consentimiento, revocación y vínculo con identidad IAP verificada. | No usar correo Google, `x_user_id` de Polar ni texto del chat como clave. No migrar datos de prueba a una identidad real. | Especificación aprobada y pruebas de aislamiento. |
+| 6 | Sincronizador OAuth cloud y Secret Manager | Seguridad + integraciones | El token local v3 demuestra compatibilidad, no operación multiusuario. | Configurar OAuth cloud, callback, renovación y sincronizador keyless bajo `polar-sport-sync`. | El runtime interactivo no puede leer secretos; no crear claves de cuenta de servicio ni registrar tokens. | Consentimiento y renovación verificadas con secreto fuera del repositorio. |
+| 7 | Composición ADK y nueva revisión Cloud Run | Ingeniero ADK / plataforma | La revisión activa aún usa `synthetic_cloud_demo`. | Después de las tareas 5–6, componer el repositorio usando el sujeto autenticado, construir por digest y desplegar con IAP. | Mantener fallback demo, fuente explícita y acceso privado. | ADK Web muestra sólo sesiones del sujeto vinculado o un estado vacío claro. |
+| 8 | Histórico analítico opcional | Ingeniería de datos | BigQuery no está creado. | Evaluarlo sólo tras validar la ruta Firestore. | Sin SQL generado por el modelo ni uso en la respuesta interactiva normal. | Diseño de retención, IAM y consulta parametrizada. |
 
 ## Criterios de salida de la siguiente entrega
 
-La siguiente entrega termina cuando las tareas 1 a 6 producen estas evidencias:
+La iteración actual termina cuando las tareas 1 a 4 producen estas evidencias:
 
-1. La identidad autenticada se traduce a un `subject_id` interno sin exponer
-   correo ni identificadores del proveedor al modelo.
-2. El agente consulta exclusivamente documentos del sujeto autenticado y puede
-   explicar la fuente y calidad del dato.
-3. Una sincronización autorizada guarda registros curados sin secretos ni
-   payloads crudos y es idempotente ante reintentos.
-4. La nueva imagen de Cloud Run continúa privada con IAP, conserva el fallback
-   demo y supera la suite automatizada y los escenarios manuales definidos.
-5. El flujo no realiza diagnósticos médicos ni actualiza planes externos sin
-   la aprobación humana ya definida.
+1. AccessLink local devuelve sesiones que se normalizan sin perder las zonas ni
+   convertir la ausencia de duración en un valor inventado.
+2. Firestore conserva exactamente los documentos curados después de reintentos
+   y permite verificar orden, fecha, procedencia, zonas y cobertura.
+3. El repositorio técnico devuelve únicamente la proyección permitida para el
+   sujeto de prueba y falla de forma clara si no existen datos.
+4. La evidencia E2E compara AccessLink local, contrato curado y Firestore sin
+   almacenar tokens ni payloads crudos.
 
 ## Fuera del alcance de esta entrega
 
+- Asociación IAP/OAuth de una persona a un sujeto de Firestore.
+- OAuth cloud multiusuario, Secret Manager y sincronización desplegada.
+- Nueva revisión Cloud Run que consulte Firestore.
 - Bluetooth y captura en vivo desde Polar Verity Sense.
 - Aplicaciones Android, iOS o web de usuario final.
 - Firestore como repositorio de muestras biométricas crudas.
@@ -70,9 +85,9 @@ La siguiente entrega termina cuando las tareas 1 a 6 producen estas evidencias:
 - Diagnóstico clínico, recomendaciones farmacológicas o actualización
   automática de entrenamiento.
 
-## Dependencias de decisión humana
+## Dependencias de la entrega posterior
 
-Antes de iniciar las tareas 1, 3 y 4 hace falta decidir quién puede asociar una
+Antes de iniciar las tareas 5 a 7 hace falta decidir quién puede asociar una
 cuenta IAP a un atleta, qué consentimiento se registra, cuánto tiempo se
 retienen los resúmenes curados y cómo se revoca el acceso. Estas decisiones no
 pueden ser sustituidas por una inferencia del agente.
