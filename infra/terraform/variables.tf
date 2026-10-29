@@ -45,6 +45,17 @@ variable "firestore_location" {
   default     = "us-central1"
 }
 
+variable "firestore_qa_subject_id" {
+  description = "Non-personal technical Firestore subject exposed only after IAP session binding in the private QA service."
+  type        = string
+  default     = "ath_local_smoke_2026"
+
+  validation {
+    condition     = can(regex("^ath_[A-Za-z0-9_-]{8,128}$", var.firestore_qa_subject_id))
+    error_message = "firestore_qa_subject_id must be an opaque ath_ identifier."
+  }
+}
+
 variable "container_image" {
   description = "Immutable Artifact Registry image digest. Do not use a mutable tag."
   type        = string

@@ -9,7 +9,11 @@ from polar_assistant.application.curated_sessions import (
     curate_dynamic_training_session,
 )
 from polar_assistant.infrastructure.curated_session_store import InMemoryCuratedSessionRepository
-from sport_assistant_agent.curated_data_tools import build_latest_curated_session_tool
+from sport_assistant_agent.curated_data_tools import (
+    build_curated_history_tool,
+    build_curated_session_by_id_tool,
+    build_latest_curated_session_tool,
+)
 
 
 SUBJECT_ID = "ath_demo_subject_2026"
@@ -132,3 +136,29 @@ def test_adk_tool_requires_subject_from_authenticated_state():
         state = {}
 
     assert tool(Context()) == {"status": "AUTHENTICATED_SUBJECT_REQUIRED"}
+
+
+def test_curated_tools_keep_history_and_single_record_inside_authenticated_subject():
+    repository = InMemoryCuratedSessionRepository()
+    newer = curate_dynamic_training_session(
+        subject_id=SUBJECT_ID,
+        payload=dynamic_payload("newer", "2026-10-29T08:30:00Z"),
+    )
+    repository.upsert(curate_dynamic_training_session(
+        subject_id=SUBJECT_ID,
+        payload=dynamic_payload("older", "2026-10-28T08:30:00Z"),
+    ))
+    repository.upsert(newer)
+    service = CuratedSessionQueryService(repository)
+    history_tool = build_curated_history_tool(service)
+    record_tool = build_curated_session_by_id_tool(service)
+
+    class Context:
+        state = {"authenticated_subject_id": SUBJECT_ID}
+
+    history = history_tool(Context(), limit=5)
+    assert history["status"] == "FOUND"
+    assert [item["provider_session_id"] for item in history["sessions"]] == ["newer", "older"]
+    assert all("subject_id" not in item for item in history["sessions"])
+    assert record_tool(newer.session_id, Context())["session"]["provider_session_id"] == "newer"
+    assert record_tool("not-a-session", Context()) == {"status": "INVALID_CURATED_SESSION_ID"}

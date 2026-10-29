@@ -7,10 +7,26 @@ from .programmatic_agents import ProgrammaticPreparationAgent
 from .bounded_agents import BoundedInferenceAgent, BoundedRecommendationAgent, GovernedWorkflowAgent
 from .routing_agent import DeterministicMessageAgent, WorkflowRouteDispatcher
 from polar_assistant.application.inference_contracts import InferencePolicy
+from polar_assistant.application.curated_sessions import CuratedSessionQueryService
+from polar_assistant.infrastructure.curated_session_store import FirestoreCuratedSessionRepository
 from polar_assistant.infrastructure.gemini_inference import GeminiInferenceGateway
 
 
-def build_workflow(*, source="local_fit", name="SportAssistantRoot", gateway=None, policy=None):
+def _firestore_query_service_for_runtime() -> CuratedSessionQueryService | None:
+    """Compose Firestore only when the server has an explicit QA subject binding."""
+    if not os.getenv("FIRESTORE_QA_SUBJECT_ID", "").startswith("ath_"):
+        return None
+    if not os.getenv("GOOGLE_CLOUD_PROJECT"):
+        return None
+    from .firestore_runtime import FirestoreRuntimeSessionDocumentClient
+
+    return CuratedSessionQueryService(
+        FirestoreCuratedSessionRepository(FirestoreRuntimeSessionDocumentClient())
+    )
+
+
+def build_workflow(*, source="local_fit", name="SportAssistantRoot", gateway=None, policy=None,
+                   curated_session_query=None):
     """Inject the model boundary for offline Runner tests; never connect on import."""
     policy = policy or InferencePolicy(max_input_tokens=int(os.getenv("GYM_COACH_MAX_INPUT_TOKENS", "4096")))
     gateway = gateway or GeminiInferenceGateway()
@@ -53,7 +69,10 @@ def build_workflow(*, source="local_fit", name="SportAssistantRoot", gateway=Non
         ),
         recommendation,
     ], description="Selecciona una sola ruta determinista a partir de métricas ya calculadas.")
-    return GovernedWorkflowAgent(name=name, policy=policy, sub_agents=[
+    return GovernedWorkflowAgent(name=name, policy=policy, curated_session_query=(
+        _firestore_query_service_for_runtime()
+        if curated_session_query is None else curated_session_query
+    ), sub_agents=[
         ProgrammaticPreparationAgent(
             name="TelemetryIngestion",
             description="Carga telemetría validada y calcula métricas con Python.",

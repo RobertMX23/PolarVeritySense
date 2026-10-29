@@ -150,6 +150,13 @@ resource "google_cloud_run_v2_service" "qa" {
         value = var.gemini_location
       }
 
+      # This is the non-personal QA fixture only. IAP is still required to
+      # bind the browser session; the value is never accepted from chat input.
+      env {
+        name  = "FIRESTORE_QA_SUBJECT_ID"
+        value = var.firestore_qa_subject_id
+      }
+
       ports {
         container_port = 8080
       }

@@ -45,17 +45,18 @@ El plan de la siguiente entrega está en
 [NEXT_PHASE_DELIVERY_PLAN.md](NEXT_PHASE_DELIVERY_PLAN.md).
 El contrato Pydantic de sesión curada, los adaptadores de almacenamiento y la
 tool de consulta se preparan en esa arquitectura. Firestore Native está
-provisionado y una prueba cloud valida cinco documentos curados; la revisión
-activa aún no conecta el agente a Firestore ni mapea IAP/OAuth al sujeto.
+provisionado y la revisión QA consulta el fixture técnico de cinco documentos
+curados tras enlazar una sesión IAP opaca; no es un mapeo de producto a datos
+personales.
 El inventario actual de pruebas está en [TESTING.md](TESTING.md).
 
 ## Inicio de conversación
 
 Un saludo breve, por ejemplo `hola`, deja la sesión en `AWAITING_INTENT`.
 El asistente ofrece revisar la última sesión disponible, comparar sesiones o
-pedir una recomendación y espera una segunda respuesta. La opción `1` usa
-Python para devolver el resumen de la sesión disponible, sin Gemini; las demás
-respuestas inician el caso acotado.
+pedir una recomendación y espera una segunda respuesta. La opción `1` y el
+histórico usan una consulta determinista de Firestore para el fixture QA, sin
+Gemini; las demás respuestas inician el caso acotado.
 
 ## Pruebas sin datos personales
 

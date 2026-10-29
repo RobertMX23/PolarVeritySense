@@ -79,11 +79,13 @@ cada tramo ni la serie de pulso.
 El repositorio técnico `FirestoreCuratedSessionRepository` ya consulta una
 colección delimitada por sujeto y valida cada documento de vuelta contra
 `CuratedTrainingSession`. La lectura cloud con ADC confirmó los cinco
-documentos, orden descendente por `started_at` y zonas presentes. Falta
-conectarlo al sincronizador desplegado y derivar `authenticated_subject_id` de
-la identidad IAP/OAuth. Hasta que esos dos límites existan, la tool no se
-expone en el flujo Cloud Run. La carga cloud de verificación usa el sujeto
-técnico `ath_local_smoke_2026`; no es un mapeo de identidad de usuario.
+documentos, orden descendente por `started_at` y zonas presentes. La siguiente
+revisión de QA compone esa lectura para el sujeto técnico
+`ath_local_smoke_2026`: un middleware reemplaza el `userId` controlado por el
+navegador por un hash opaco del encabezado IAP antes de que ADK abra la sesión.
+El agente recibe sólo el sujeto técnico configurado por el servidor. Esto no
+es un vínculo de producto IAP/OAuth a una persona ni una solución
+multiusuario; el sincronizador cloud y el consentimiento siguen pendientes.
 
 ### Verificación con la autorización existente
 
@@ -102,9 +104,9 @@ BigQuery no se aprovisionó.
 | Área | Estado actual | Implicación |
 |---|---|---|
 | Adaptador Polar | Existe `AccessLinkExerciseRepository` para el endpoint histórico v3 y un flujo OAuth local. | Es una base de desarrollo; no hay sincronización cloud ni token persistente por atleta. |
-| Cloud Run | `polar-sport-assistant` usa la cuenta `polar-sport-runtime` y ADC para Vertex AI. | No usa `GOOGLE_API_KEY`. La cuenta tiene lectura de Firestore, aunque la revisión activa todavía no compone un repositorio Firestore ni consulta datos personales. |
+| Cloud Run | `polar-sport-assistant` usa la cuenta `polar-sport-runtime` y ADC para Vertex AI y Firestore. | No usa `GOOGLE_API_KEY`. La nueva revisión de QA consulta sólo el fixture técnico de Firestore tras el enlace IAP; no consulta datos personales. |
 | Firestore | Base Native `(default)` en `us-central1`; cuenta `polar-sport-sync` con escritura y runtime con lectura. | Cinco documentos curados de prueba están verificados bajo el sujeto técnico. Aún no existe mapeo IAP/OAuth a sujeto ni sincronizador desplegado. |
-| Datos presentados por la URL | Si no hay FIT montado autorizado, crea dos sesiones `synthetic_cloud_demo`. | La respuesta de “última sesión” de ADK Web es una demo y no un dato personal. |
+| Datos presentados por la URL | Si no hay FIT montado autorizado, crea dos sesiones `synthetic_cloud_demo`; para “última sesión” u “histórico” la revisión QA consulta el fixture curado tras IAP. | La respuesta Firestore se etiqueta como QA y no representa una sesión personal. |
 | Persistencia actual | Las sesiones ADK viven en SQLite bajo `/tmp/polar-adk`. | Se pierden al reemplazar la instancia; no son una base de telemetría. |
 
 La captura actual es coherente con este estado: muestra `Fuente:

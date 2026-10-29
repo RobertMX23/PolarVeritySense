@@ -23,6 +23,8 @@ from polar_assistant.application.inference_policy import (
     approval_command, build_request, compact_evidence, proposal_id,
     render_proposal, reserve_call, validate_proposal, validate_stage,
 )
+from .curated_data_tools import authenticated_subject_id_from_state
+from .runtime_identity import qa_subject_for_iap_user
 
 
 def state_event(agent, ctx, **delta):
@@ -60,6 +62,13 @@ def requests_latest_session_summary(text: str) -> bool:
     )
 
 
+def requests_session_history(text: str) -> bool:
+    normalized = _normalize_user_text(text)
+    return any(phrase in normalized for phrase in (
+        "mi historico", "historial de sesiones", "mis sesiones", "sesiones anteriores",
+    ))
+
+
 def welcome_message() -> str:
     return (
         "Bienvenido al asistente deportivo. Aún no analizaré datos ni haré una recomendación.\n"
@@ -95,6 +104,35 @@ def latest_session_summary(case: dict, telemetry: dict, metrics: dict) -> str:
         f"• FC máxima: {metrics.get('max_hr_bpm') or 'no disponible'} ppm\n"
         f"• Fuente: {source}. {source_note}\n"
         "No se generó recomendación ni se aplicó ningún cambio. Puedes pedir una comparación o una recomendación orientativa en otro caso."
+    )
+
+
+def curated_session_summary(session: dict) -> str:
+    """Render only the curated, agent-safe projection returned by the repository."""
+    zones = session.get("zone_periods") or []
+    return (
+        "Resumen de tu última sesión curada:\n"
+        f"• Fecha: {session.get('started_at') or 'no disponible'}\n"
+        f"• Modalidad: {session.get('sport_reference_id') or 'no disponible'}\n"
+        f"• Duración: {session.get('duration_seconds') or 'no disponible'} segundos\n"
+        f"• FC media: {session.get('heart_rate_average_bpm') or 'no disponible'} ppm\n"
+        f"• FC máxima: {session.get('heart_rate_maximum_bpm') or 'no disponible'} ppm\n"
+        f"• Zonas: {len(zones)} períodos; calidad {session.get('heart_rate_zone_duration_quality') or 'no disponible'}; "
+        f"cobertura {session.get('heart_rate_zone_coverage_percent') or 0}%\n"
+        "Fuente: Firestore curado de QA. No se generó recomendación ni se aplicó ningún cambio."
+    )
+
+
+def curated_history_summary(sessions: list[dict]) -> str:
+    rows = [
+        f"{index}. {item.get('started_at') or 'sin fecha'} · {item.get('sport_reference_id') or 'sin modalidad'} · "
+        f"{item.get('duration_seconds') or 'sin duración'} s · FC media {item.get('heart_rate_average_bpm') or 'n/d'} ppm"
+        for index, item in enumerate(sessions, start=1)
+    ]
+    return (
+        "Histórico de sesiones curadas de QA (más reciente primero):\n"
+        + "\n".join(rows)
+        + "\nFuente: Firestore curado de QA. No se generó recomendación ni se aplicó ningún cambio."
     )
 
 
@@ -211,6 +249,7 @@ class GovernedWorkflowAgent(BaseAgent):
     """
 
     policy: InferencePolicy = Field(default_factory=InferencePolicy)
+    curated_session_query: Any = Field(default=None, exclude=True)
     _locks: dict = PrivateAttr(default_factory=dict)
 
     async def _run_async_impl(self, ctx):
@@ -226,6 +265,13 @@ class GovernedWorkflowAgent(BaseAgent):
             )
             if latest:
                 ctx.session.state.update(latest.state)
+            subject_id = qa_subject_for_iap_user(ctx.session.user_id)
+            if subject_id is not None:
+                ctx.session.state["authenticated_subject_id"] = subject_id
+            else:
+                # ADK Web clients can submit session state.  Only the server
+                # bound IAP identity may establish this value.
+                ctx.session.state.pop("authenticated_subject_id", None)
             async for event in self._run_case(ctx):
                 yield event
         finally:
@@ -241,7 +287,15 @@ class GovernedWorkflowAgent(BaseAgent):
                 yield message_event(self, ctx, welcome_message())
                 return
             if requests_latest_session_summary(text):
+                if self.curated_session_query is not None:
+                    async for event in self._run_curated_latest_session(ctx):
+                        yield event
+                    return
                 async for event in self._run_latest_session_summary(ctx, text):
+                    yield event
+                return
+            if requests_session_history(text):
+                async for event in self._run_curated_history(ctx):
                     yield event
                 return
             # The next substantive user message starts a real case. The
@@ -326,6 +380,40 @@ class GovernedWorkflowAgent(BaseAgent):
         case.update(status="COMPLETED_SUMMARY", termination_reason="LAST_SESSION_SUMMARY", final_text=summary)
         yield state_event(self, ctx, inference_case=case)
         yield message_event(self, ctx, summary)
+
+    async def _run_curated_latest_session(self, ctx):
+        """Read the trusted subject's latest Firestore record without an LLM call."""
+        subject_id = authenticated_subject_id_from_state(ctx.session.state)
+        if self.curated_session_query is None or subject_id is None:
+            yield message_event(self, ctx, "No hay una identidad de datos autorizada para consultar sesiones curadas.")
+            return
+        try:
+            result = self.curated_session_query.latest_for_authenticated_subject(subject_id)
+        except Exception:
+            yield message_event(self, ctx, "No fue posible consultar Firestore en este momento. No se aplicó ningún ajuste.")
+            return
+        yield state_event(self, ctx, curated_query={"intent": "LATEST", "status": result["status"]})
+        if result["status"] != "FOUND":
+            yield message_event(self, ctx, "No hay sesiones curadas disponibles para tu identidad autorizada.")
+            return
+        yield message_event(self, ctx, curated_session_summary(result["session"]))
+
+    async def _run_curated_history(self, ctx):
+        """Read a small, deterministic Firestore history without model inference."""
+        subject_id = authenticated_subject_id_from_state(ctx.session.state)
+        if self.curated_session_query is None or subject_id is None:
+            yield message_event(self, ctx, "No hay una identidad de datos autorizada para consultar el histórico curado.")
+            return
+        try:
+            result = self.curated_session_query.list_for_authenticated_subject(subject_id, limit=5)
+        except Exception:
+            yield message_event(self, ctx, "No fue posible consultar Firestore en este momento. No se aplicó ningún ajuste.")
+            return
+        yield state_event(self, ctx, curated_query={"intent": "HISTORY", "status": result["status"]})
+        if result["status"] != "FOUND":
+            yield message_event(self, ctx, "No hay sesiones curadas disponibles para tu identidad autorizada.")
+            return
+        yield message_event(self, ctx, curated_history_summary(result["sessions"]))
 
     async def _follow_up(self, ctx, previous, text):
         case = deepcopy(previous)

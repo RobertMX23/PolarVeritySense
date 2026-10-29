@@ -351,3 +351,22 @@ class CuratedSessionQueryService:
             "status": "FOUND",
             "session": record.model_dump(mode="json", exclude={"subject_id"}),
         }
+
+    def list_for_authenticated_subject(self, subject_id: str, *, limit: int = 5) -> dict[str, Any]:
+        """Return a bounded history without exposing the internal subject id."""
+        records = self._repository.list_for_subject(subject_id, limit=limit)
+        return {
+            "status": "FOUND" if records else "NO_CURATED_SESSION",
+            "sessions": [record.model_dump(mode="json", exclude={"subject_id"}) for record in records],
+        }
+
+    def session_for_authenticated_subject(self, subject_id: str, *, session_id: str) -> dict[str, Any]:
+        """Find one curated record only inside the authenticated subject's scope."""
+        records = self._repository.list_for_subject(subject_id, limit=100)
+        record = next((item for item in records if item.session_id == session_id), None)
+        if record is None:
+            return {"status": "NO_CURATED_SESSION"}
+        return {
+            "status": "FOUND",
+            "session": record.model_dump(mode="json", exclude={"subject_id"}),
+        }
