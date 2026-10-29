@@ -44,7 +44,7 @@ La primera parte del diseño ya está codificada y no requiere una cuenta cloud:
 
 | Pieza | Archivo | Responsabilidad |
 |---|---|---|
-| Proyección de Polar Dynamic v4 | `src/polar_assistant/application/curated_sessions.py` | Acepta únicamente `identifier.id`, inicio, duración, referencia de deporte, FC media/máxima, carga, distancia, calorías y tiempos de procedencia. Ignora los demás campos del proveedor. |
+| Proyección de Polar Dynamic v4 | `src/polar_assistant/application/curated_sessions.py` | Acepta únicamente `identifier.id`, inicio, duración, referencia de deporte, FC media/máxima, carga, distancia, calorías, procedencia y zonas. Ignora los demás campos del proveedor. |
 | Registro curado | `CuratedTrainingSession` | Genera `ses_<uuid>` estable a partir de sujeto interno y sesión Polar, por lo que reintentar una sincronización hace *upsert* del mismo registro. |
 | Adaptadores de escritura | `src/polar_assistant/infrastructure/curated_session_store.py` | Escribe el mismo contrato a Firestore o a una fila de BigQuery a través de un cliente inyectado. |
 | Tool del agente | `sport_assistant_agent/curated_data_tools.py` | Obtiene el sujeto desde `authenticated_subject_id` en estado autenticado; no acepta un ID indicado por el chat. |
@@ -54,10 +54,34 @@ Los campos de alto riesgo o no necesarios se descartan antes de persistir:
 original. El contrato marca la sesión como `validated` sólo cuando existen FC
 media y máxima; de otro modo queda `summary_only`.
 
+### Lista exacta de valores consultables
+
+| Grupo | Valores curados |
+|---|---|
+| Identidad y procedencia | `session_id` interno, `provider`, `provider_session_id`, `source_created_at`, `source_modified_at`, `ingested_at`, `schema_version`, `data_quality`. |
+| Sesión | `started_at`, `duration_seconds`, `sport_reference_id`. |
+| Métricas resumidas | `heart_rate_average_bpm`, `heart_rate_maximum_bpm`, `training_load`, `distance_meters`, `calories`. |
+| Periodos de zona | Por cada zona: `zone_type`, `zone_index` cuando el proveedor lo entrega, límites inferior/superior, `duration_seconds`, distancia y carga muscular cuando apliquen. La sesión también incluye duración total, porcentaje de cobertura y calidad (`complete`, `partial` o `unavailable`) de zonas de FC. |
+
+En Dynamic API v4 se solicita `features=zones`. Su campo `inZone` representa el
+tiempo acumulado de la zona en milisegundos y se guarda como
+`duration_seconds`. Es una duración agregada, no la marca de inicio y fin de
+cada tramo ni la serie de pulso.
+
 El siguiente cambio de ejecución será conectar el cliente Firestore al
 sincronizador y poblar `authenticated_subject_id` desde la identidad IAP/OAuth.
 Hasta que esos dos límites existan, la tool queda disponible para pruebas con el
 repositorio en memoria y no se expone en el flujo Cloud Run.
+
+### Verificación con la autorización existente
+
+La cuenta configurada actualmente usa el flujo AccessLink v3, no Dynamic API
+v4. Se implementó una compatibilidad v3 para migrar sus ejercicios al mismo
+contrato sin perder las zonas. `scripts/polar_v3_curated_smoke.py` consulta en
+modo de sólo lectura, normaliza cada ejercicio y repite el *upsert* en memoria.
+La prueba confirmó cinco registros curados, cinco registros después de los
+reintentos y cinco con periodos de zona. Es evidencia de transformación e
+idempotencia, no una escritura en Firestore ni BigQuery.
 
 ## Estado del repositorio y del despliegue actual
 

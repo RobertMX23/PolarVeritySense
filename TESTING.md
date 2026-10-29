@@ -2,8 +2,8 @@
 
 ## Inventario actual
 
-La suite actual contiene **90 casos de prueba**. El número es el resultado de
-`pytest --collect-only -q`: no representa 90 sesiones manuales ni 90 llamadas
+La suite actual contiene **93 casos de prueba**. El número es el resultado de
+`pytest --collect-only -q`: no representa 93 sesiones manuales ni 93 llamadas
 a Gemini. Un archivo puede producir varios casos mediante `pytest.mark.parametrize`.
 
 | Grupo | Casos | Qué valida | Tipo |
@@ -14,10 +14,11 @@ a Gemini. Un archivo puede producir varios casos mediante `pytest.mark.parametri
 | Telemetría y dominio | 9 | Comparación de sesiones, métricas, demo cloud y adaptadores FIT. | Unidad; algunos casos leen sólo los FIT demo locales configurados. |
 | Polar AccessLink y OAuth | 9 | Selección de sesión y errores HTTP/OAuth controlados. | Unidad con dobles de prueba; sin llamada remota. |
 | Composición y configuración | 8 | Jerarquía ADK, memoria local y cliente Vertex sin API key. | Unidad con variables y clientes simulados. |
-| Sesión curada y tool | 4 | Allowlist Dynamic API v4, ID estable, rechazo de payload inválido y consulta limitada al sujeto autenticado. | Unidad / contrato; repositorio en memoria. |
+| Sesión curada, Dynamic v4 y compatibilidad v3 | 7 | Allowlist, zonas y duraciones, ID estable, rechazo de payload inválido, consulta limitada al sujeto autenticado y solicitud v4 de `features=zones`. | Unidad / contrato; repositorio en memoria. |
 
-Los grupos suman 90. Las cuatro pruebas más recientes validan el contrato de
-sesión curada y su tool de consulta; no contactan Polar, Firestore ni BigQuery.
+Los grupos suman 93. Las siete pruebas más recientes validan el contrato de
+sesión curada, zonas y la consulta v4/v3; no contactan Polar, Firestore ni
+BigQuery.
 
 ## Ejecución
 
@@ -28,7 +29,7 @@ sesión curada y su tool de consulta; no contactan Polar, Firestore ni BigQuery.
 
 La primera orden informa el inventario. La segunda ejecuta la suite. Las
 advertencias actuales de `fitparse` por `utcfromtimestamp` son deprecaciones
-de la dependencia; no son fallos de los 90 casos.
+de la dependencia; no son fallos de los 93 casos.
 
 ## Qué estas pruebas sí demuestran
 
