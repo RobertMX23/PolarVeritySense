@@ -1,0 +1,167 @@
+# Arquitectura de conexión y consulta de datos
+
+## Decisión propuesta
+
+El servicio de Cloud Run no debe consultar Polar ni almacenar tokens dentro del
+agente durante una conversación. La ruta propuesta separa la captura,
+normalización y consulta:
+
+1. **Polar AccessLink Dynamic API v4** es el origen de sesiones, después del
+   consentimiento OAuth2 de cada atleta.
+2. **Firestore (modo nativo)** conserva el resumen operativo que el agente
+   necesita para preguntas como «mi última sesión». Firestore usa colecciones y
+   documentos; no usa tablas ni filas.
+3. **BigQuery** conserva la tabla histórica analítica para comparaciones,
+   tendencias y evaluación. No es la fuente de una respuesta interactiva
+   simple salvo que exista un motivo analítico concreto.
+4. Un repositorio Python determinista consulta el almacén autorizado y entrega
+   al agente sólo métricas permitidas. El LLM nunca genera SQL ni recibe tokens,
+   muestras crudas de frecuencia cardiaca o payloads OAuth.
+
+```mermaid
+flowchart LR
+    A[Atleta en Polar Flow] -->|OAuth2 y consentimiento| P[Polar AccessLink v4]
+    P --> S[Servicio de sincronización Cloud Run]
+    SM[Secret Manager\nclient secret] --> S
+    T[Almacén cifrado de tokens\npor atleta] --> S
+    S --> N[Normalizador Python\nvalidación y procedencia]
+    N --> F[(Firestore\núltima sesión y consultas operativas)]
+    N --> B[(BigQuery\nsport_data.sessions_v1)]
+    R[Cloud Run: agente ADK] --> D[Repositorio de datos\nconsulta acotada]
+    D --> F
+    D --> B
+    D --> M[Resumen de métricas permitido]
+    M --> L[Agente / Gemini]
+```
+
+El servicio de sincronización es un límite de seguridad: gestiona OAuth,
+renovación, reintentos, límites de la API y normalización. El servicio del
+agente sólo lee datos ya autorizados para el sujeto autenticado.
+
+## Estado del repositorio y del despliegue actual
+
+| Área | Estado actual | Implicación |
+|---|---|---|
+| Adaptador Polar | Existe `AccessLinkExerciseRepository` para el endpoint histórico v3 y un flujo OAuth local. | Es una base de desarrollo; no hay sincronización cloud ni token persistente por atleta. |
+| Cloud Run | `polar-sport-assistant` usa la cuenta `polar-sport-runtime` y ADC para Vertex AI. | No usa `GOOGLE_API_KEY`, ni tiene Firestore, BigQuery ni Polar configurados. |
+| Datos presentados por la URL | Si no hay FIT montado autorizado, crea dos sesiones `synthetic_cloud_demo`. | La respuesta de “última sesión” de ADK Web es una demo y no un dato personal. |
+| Persistencia actual | Las sesiones ADK viven en SQLite bajo `/tmp/polar-adk`. | Se pierden al reemplazar la instancia; no son una base de telemetría. |
+
+La captura actual es coherente con este estado: muestra `Fuente:
+synthetic_cloud_demo`. Antes de añadir una conexión real, no debe cambiarse esa
+etiqueta ni atribuirse la demo a una persona.
+
+## Comparación de las opciones
+
+| Opción | Función adecuada | Ventajas | Límite | Decisión |
+|---|---|---|---|---|
+| Consulta de Polar durante el chat | Ninguna como ruta normal | Datos recientes | Depende de OAuth, disponibilidad y límites de proveedor; expone la conversación a errores de red. | No usar para cada mensaje. |
+| Firestore | Última sesión, lista corta y estado operativo por atleta | Baja latencia, estructura por documento y control de acceso por aplicación. | No proporciona una tabla SQL para analítica amplia. | Almacén primario del agente. |
+| BigQuery | Historial, comparaciones en periodos y evaluación | Tabla SQL, particiones y agregaciones escalables. | Una consulta requiere job y no sustituye un índice operativo de baja latencia. | Espejo analítico, activado después de Firestore. |
+| Firebase Realtime Database | Eventos simples en tiempo real | Sincronización de clientes. | No aporta una tabla analítica ni mejora este caso frente a Firestore. | No se incorpora en la primera versión. |
+
+## Modelo mínimo de datos
+
+El identificador del sujeto es un identificador interno opaco. No se usa el
+correo de Google ni el `x_user_id` de Polar como clave de lectura del agente.
+La relación con los identificadores externos se mantiene sólo en el servicio de
+sincronización.
+
+### Firestore: documento operativo
+
+Ruta propuesta: `athletes/{subject_id}/sessions/{session_id}`.
+
+```json
+{
+  "subject_id": "ath_01H...",
+  "session_id": "ses_01H...",
+  "started_at": "2026-10-29T12:00:00Z",
+  "sport": "TREADMILL_RUNNING",
+  "duration_seconds": 2400,
+  "heart_rate": {"mean_bpm": 141, "max_bpm": 164},
+  "zone_seconds": {"z1": 120, "z2": 840, "z3": 1020, "z4": 420},
+  "metrics": {"cardiac_drift_pct": 3.2},
+  "data_quality": "validated",
+  "source": "polar_accesslink_v4",
+  "source_recorded_at": "2026-10-29T12:00:00Z",
+  "ingested_at": "2026-10-29T12:03:14Z",
+  "schema_version": "1.0"
+}
+```
+
+La consulta de última sesión se limita al sujeto autenticado, ordenada por
+`started_at` y con límite uno. Las muestras crudas de pulso, token OAuth,
+secreto de cliente, dirección de callback y payload original no forman parte
+del documento que consulta el agente.
+
+### BigQuery: tabla histórica
+
+Dataset propuesto: `sport_data`; tabla: `sessions_v1`.
+
+```sql
+CREATE TABLE `PROJECT_ID.sport_data.sessions_v1` (
+  subject_id STRING NOT NULL,
+  session_id STRING NOT NULL,
+  started_at TIMESTAMP NOT NULL,
+  sport STRING,
+  duration_seconds INT64,
+  mean_heart_rate_bpm INT64,
+  max_heart_rate_bpm INT64,
+  cardiac_drift_pct FLOAT64,
+  data_quality STRING NOT NULL,
+  source STRING NOT NULL,
+  ingested_at TIMESTAMP NOT NULL,
+  schema_version STRING NOT NULL
+)
+PARTITION BY DATE(started_at)
+CLUSTER BY subject_id, sport;
+```
+
+El repositorio usa una consulta parametrizada con un identificador de sujeto
+obtenido de la sesión autenticada. No concatena texto del usuario ni permite
+elegir una tabla:
+
+```sql
+SELECT session_id, started_at, sport, duration_seconds,
+       mean_heart_rate_bpm, max_heart_rate_bpm, cardiac_drift_pct,
+       data_quality, source
+FROM `PROJECT_ID.sport_data.sessions_v1`
+WHERE subject_id = @subject_id
+  AND started_at >= @from_time
+ORDER BY started_at DESC
+LIMIT @limit;
+```
+
+## Identidad, secretos y acceso
+
+| Recurso | Identidad o ubicación | Regla |
+|---|---|---|
+| Cliente OAuth de Polar | Secret Manager | El `client_secret` se lee sólo durante autorización, renovación o sincronización. Nunca se sube a Git ni aparece en ADK state. |
+| Token por atleta | Almacén cifrado separado, con referencia opaca desde el perfil | Sólo el servicio de sincronización puede leerlo; el agente no tiene ese permiso. |
+| Firestore | Cuenta de servicio de lectura del agente, con el mínimo alcance | El acceso se filtra por `subject_id` autenticado y no por una entrada libre del chat. |
+| BigQuery | Cuenta de servicio de analítica/repository con permisos sobre el dataset, no sobre todo el proyecto | Sólo consultas parametrizadas y columnas autorizadas. |
+| Vertex AI | `polar-sport-runtime` mediante ADC | Se conserva la configuración actual; no se añade una API key de Gemini. |
+
+La cuenta actual `polar-sport-runtime` no debe recibir todos estos permisos por
+comodidad. Se crean cuentas separadas para sincronización y para lectura
+analítica si se aprueba el diseño, con permisos mínimos sobre cada recurso.
+
+## Plan de implementación
+
+| Fase | Entregable verificable | No se hace todavía |
+|---|---|---|
+| 0. Gobierno | Consentimiento, sujeto interno, retención y lista de métricas permitidas. | Importar sesiones personales. |
+| 1. Lectura operativa | Colección Firestore, `SessionRepository`, fixture sintético y pruebas de aislamiento por sujeto. | LLM con acceso directo a Firestore. |
+| 2. Polar | Callback OAuth cloud, secreto en Secret Manager y sincronizador que normaliza una sesión v4. | Guardar tokens en `.env`, Firestore o BigQuery. |
+| 3. Histórico | Dataset BigQuery, tabla particionada, carga desde el normalizador y prueba de consulta parametrizada. | SQL generado por el modelo. |
+| 4. Agente y operación | Sustituir la fuente demo por el repositorio, trazabilidad de fuente y despliegue de Cloud Run. | Mostrar datos si no hay consentimiento, calidad válida o pertenencia al sujeto. |
+
+## Fuentes técnicas
+
+- Polar describe Dynamic API v4, registro del cliente, consentimiento OAuth2,
+  renovación de tokens y límites por cliente: <https://www.polar.com/polar-api-v4/>.
+- El modelo de Firestore usa colecciones y documentos: <https://firebase.google.com/docs/firestore/data-model>.
+- BigQuery permite parámetros de consulta y evita usar valores de parámetro como
+  SQL concatenado: <https://cloud.google.com/bigquery/docs/parameterized-queries>.
+- Cloud Run entrega credenciales de aplicación a través de la cuenta de servicio
+  adjunta: <https://cloud.google.com/run/docs/securing/service-identity>.

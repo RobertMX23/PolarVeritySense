@@ -39,6 +39,8 @@ La referencia de grafos y la tabla cruzada están en
 [ADK_GRAPH_WORKFLOW_EVALUATION.md](ADK_GRAPH_WORKFLOW_EVALUATION.md).
 El prompt de implementación controlada está en
 [ADK_GRAPH_IMPLEMENTATION_PROMPT.md](ADK_GRAPH_IMPLEMENTATION_PROMPT.md).
+La arquitectura de conexión de Polar, Firestore y BigQuery está en
+[DATA_CONNECTION_ARCHITECTURE.md](DATA_CONNECTION_ARCHITECTURE.md).
 El inventario actual de pruebas está en [TESTING.md](TESTING.md).
 
 ## Inicio de conversación

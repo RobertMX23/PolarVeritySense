@@ -101,6 +101,16 @@ una prueba con FIT reales, copiar únicamente los archivos autorizados a un
 bucket privado y conceder al runtime lectura de esos objetos. No incorporarlos
 a la imagen ni reutilizar la aprobación de un caso anterior.
 
+## Conexión de datos de producto
+
+La revisión actual no configura Firestore, BigQuery ni un token Polar. Al no
+existir un FIT autorizado, ADK Web devuelve `synthetic_cloud_demo`. La
+arquitectura prevista separa la sincronización con Polar, la consulta operativa
+en Firestore y el histórico analítico en BigQuery; el agente recibe un resumen
+autorizado por un repositorio Python y nunca credenciales ni SQL generado por el
+modelo. Consulta [DATA_CONNECTION_ARCHITECTURE.md](../DATA_CONNECTION_ARCHITECTURE.md)
+antes de habilitar cualquiera de esos recursos.
+
 Cloud Run permanece en `us-central1`. El modelo se invoca desde la ubicación
 Vertex `global`, que es la ubicación publicada para `gemini-3.8-flash`;
 esa diferencia se declara con `VERTEX_GEMINI_LOCATION` y no cambia la región
