@@ -2,7 +2,7 @@
 
 ## Inventario actual
 
-La suite actual contiene **93 casos de prueba**. El número es el resultado de
+La suite actual contiene **97 casos de prueba**. El número es el resultado de
 `pytest --collect-only -q`: no representa 93 sesiones manuales ni 93 llamadas
 a Gemini. Un archivo puede producir varios casos mediante `pytest.mark.parametrize`.
 
@@ -15,16 +15,22 @@ a Gemini. Un archivo puede producir varios casos mediante `pytest.mark.parametri
 | Polar AccessLink y OAuth | 9 | Selección de sesión y errores HTTP/OAuth controlados. | Unidad con dobles de prueba; sin llamada remota. |
 | Composición y configuración | 8 | Jerarquía ADK, memoria local y cliente Vertex sin API key. | Unidad con variables y clientes simulados. |
 | Sesión curada, Dynamic v4 y compatibilidad v3 | 7 | Allowlist, zonas y duraciones, ID estable, rechazo de payload inválido, consulta limitada al sujeto autenticado y solicitud v4 de `features=zones`. | Unidad / contrato; repositorio en memoria. |
+| Repositorio Firestore curado | 4 | Última sesión, orden descendente, límite, colección vacía, aislamiento de sujeto y documento inválido. | Unidad con cliente Firestore falso; sin llamada remota. |
 
-Los grupos suman 93. Las siete pruebas más recientes validan el contrato de
-sesión curada, zonas y la consulta v4/v3; no contactan Polar, Firestore ni
-BigQuery.
+Los grupos suman 97. Las siete pruebas del contrato curado y las cuatro del
+repositorio Firestore validan la frontera de datos; no contactan Polar,
+Firestore ni BigQuery.
 
 Además de la suite, el 29 de octubre de 2026 se ejecutó la verificación manual
 `scripts/firestore_curated_smoke.py` contra Firestore Native: cinco sesiones
 AccessLink v3 autorizadas, cinco documentos leídos tras *upserts* idempotentes
 y 25 períodos de zona preservados. No forma parte de `pytest`, porque requiere
 consentimiento Polar y ADC con permiso de escritura.
+
+El mismo día, `scripts/firestore_curated_query_smoke.py` inyectó un cliente REST
+con ADC en `FirestoreCuratedSessionRepository` y leyó los cinco documentos en
+orden descendente por `started_at`, todos con períodos de zona. Es evidencia de
+la consulta técnica del sujeto de prueba; no activa la consulta en ADK Web.
 
 ## Ejecución
 

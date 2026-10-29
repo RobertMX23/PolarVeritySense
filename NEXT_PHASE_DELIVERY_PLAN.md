@@ -31,6 +31,12 @@ El prompt de implementación con archivos, ajuste de código y límites está en
 | Zonas | Se conservaron 25 períodos de zona con límites, duración y calidad de cobertura. | La cobertura de las cinco sesiones es `partial`; nunca se debe completar con valores inventados. |
 | Seguridad | Cuenta runtime de sólo lectura y cuenta `polar-sport-sync` de escritura, ambas sin claves gestionadas por usuario. | El sincronizador todavía no está desplegado. |
 
+**Evidencia de ejecución — 2026-10-29:** se implementó
+`FirestoreCuratedSessionRepository` con cliente inyectado y se verificó contra
+Firestore mediante ADC: cinco registros, orden descendente por `started_at` y
+cinco con períodos de zona. La composición ADK, la identidad IAP y Cloud Run no
+cambiaron.
+
 ## Tabla cruzada del alcance y avance
 
 | Línea de trabajo | Alcance original | Estado real | Evidencia actual | Siguiente punto que la desbloquea | Documento de referencia |
@@ -40,7 +46,7 @@ El prompt de implementación con archivos, ajuste de código y límites está en
 | Polar AccessLink local | Fase 1 / 3 | Parcial | Cinco sesiones v3 autorizadas y zonas normalizadas. | Repetir lectura, validación, zonas y errores transitorios con la autorización local. | `DATA_CONNECTION_ARCHITECTURE.md` |
 | Cloud Run privado | Fase 2 / 3.5 | Completado para QA | IAP, ADC, Vertex AI y revisión privada desplegada. | Mantener IAP al publicar la siguiente imagen. | `deploy/README.md` |
 | Inicio guiado ADK Web | Fase 1 / experiencia QA | Completado | `AWAITING_INTENT`; saludo no abre análisis y opción `1` es determinista. | Resolver sujeto autenticado para mostrar datos curados reales. | `README.md`, `TESTING.md` |
-| Firestore curado | Fase 2 | Base verificada | Base Native, permisos mínimos, 5 documentos y 25 períodos de zona leídos tras reintentos. | Repositorio de lectura y consulta técnica para el sujeto de prueba. | `DATA_CONNECTION_ARCHITECTURE.md` |
+| Firestore curado | Fase 2 | Consulta técnica verificada | Base Native, permisos mínimos, 5 documentos, 25 períodos de zona y repositorio de lectura probado. | Evidencia E2E AccessLink → Firestore; después, identidad de producto. | `DATA_CONNECTION_ARCHITECTURE.md` |
 | Identidad y consentimiento | Fase 2 | Pendiente | IAP autentica acceso web, pero no existe vínculo IAP → `subject_id`. | Definir propietario, consentimiento, revocación y aislamiento. | Este plan, tarea 1 |
 | Consulta Firestore desde el agente | Fase 2 | Pendiente | Contrato y tool acotada existen, pero la imagen no los compone. | Repositorio por `authenticated_subject_id` y pruebas A/B. | Este plan, tarea 2 |
 | Sincronización Polar cloud | Fase 2 | Pendiente | Cuenta `polar-sport-sync` creada sin claves; smoke test usó ADC de operador. | Servicio keyless, OAuth cloud y Secret Manager. | Este plan, tareas 3–4 |

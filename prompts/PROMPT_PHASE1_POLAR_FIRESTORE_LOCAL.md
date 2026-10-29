@@ -1,5 +1,10 @@
 # Prompt de implementación — Polar AccessLink local y Firestore curado
 
+> **Estado de ejecución:** aplicado el 2026-10-29. Se entregó el repositorio
+> técnico de lectura, cuatro pruebas nuevas y una consulta ADC exitosa de los
+> cinco documentos de prueba. Este prompt permanece como especificación de
+> revisión y para futuras iteraciones de la misma frontera.
+
 ## Rol
 
 Actúa como **ingeniero senior de integración Python y persistencia de datos**.
@@ -26,11 +31,11 @@ y demostrar una consulta técnica limitada al sujeto de prueba.
 | Archivo | Código actual | Ajuste requerido |
 |---|---|---|
 | `src/polar_assistant/application/curated_sessions.py` | `CuratedTrainingSession`, `CuratedZonePeriod`, curación v3 y `CuratedSessionQueryService` ya definen la allowlist, el ID estable y la consulta de dominio. | No ampliar el contrato con datos crudos. Reutilizarlo como única frontera de datos. |
-| `src/polar_assistant/infrastructure/curated_session_store.py` | Contiene repositorio en memoria y `FirestoreCuratedSessionWriter`; falta un repositorio Firestore de lectura que implemente `CuratedSessionRepository`. | Añadir `FirestoreCuratedSessionRepository` de sólo lectura, con cliente inyectado, que recupere documentos de `athletes/{subject_id}/sessions`, los valide como `CuratedTrainingSession`, los ordene por `started_at` descendente y aplique `limit`. |
+| `src/polar_assistant/infrastructure/curated_session_store.py` | Contiene repositorio en memoria, writer y `FirestoreCuratedSessionRepository` de lectura con cliente inyectado. | Mantener la ruta `athletes/{subject_id}/sessions`, la validación `CuratedTrainingSession`, el orden descendente y el límite; no mover la identidad a esta capa. |
 | `sport_assistant_agent/curated_data_tools.py` | La tool exige `authenticated_subject_id` y nunca acepta el sujeto desde el chat. | No cambiar su frontera de identidad ni conectarla a `agent.py` en esta iteración. Probar el repositorio debajo del servicio de consulta. |
 | `scripts/polar_v3_inventory.py` | Consulta AccessLink en sólo lectura con `samples=false` y `zones=true`. | Mantener la lectura minimizada; ampliar sólo errores transitorios controlados si es necesario. |
 | `scripts/polar_v3_curated_smoke.py` | Demuestra curación e idempotencia únicamente en memoria. | Mantenerla como contrato local; no convertirla en mecanismo cloud. |
-| `scripts/firestore_curated_smoke.py` | Escribe y relee por REST los documentos curados, pero no ejercita un repositorio de lectura reutilizable. | Reutilizar o complementar con un smoke test de consulta que pruebe el repositorio contra Firestore mediante ADC. |
+| `scripts/firestore_curated_smoke.py` y `scripts/firestore_curated_query_smoke.py` | El primero escribe/relee; el segundo ejecuta consulta técnica REST mediante el repositorio inyectado. | Mantener ambos separados: escritura curada y lectura técnica verificable. |
 | `tests/test_curated_sessions.py` | Cubre allowlist, zonas v3/v4, ID estable y servicio de consulta en memoria. | Añadir pruebas del repositorio Firestore con dobles de cliente: orden, límite, documento inválido, colección vacía y aislamiento de sujeto. |
 
 ## Instrucciones

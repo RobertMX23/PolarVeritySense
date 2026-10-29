@@ -76,12 +76,14 @@ tiempo acumulado de la zona en milisegundos y se guarda como
 `duration_seconds`. Es una duración agregada, no la marca de inicio y fin de
 cada tramo ni la serie de pulso.
 
-Falta conectar el cliente Firestore al sincronizador desplegado y derivar
-`authenticated_subject_id` de la identidad IAP/OAuth. Hasta que esos dos
-límites existan, la tool queda disponible para pruebas con el repositorio en
-memoria y no se expone en el flujo Cloud Run. La carga cloud de verificación
-usa el sujeto técnico `ath_local_smoke_2026`; no es un mapeo de identidad de
-usuario ni habilita al agente a leer esos documentos.
+El repositorio técnico `FirestoreCuratedSessionRepository` ya consulta una
+colección delimitada por sujeto y valida cada documento de vuelta contra
+`CuratedTrainingSession`. La lectura cloud con ADC confirmó los cinco
+documentos, orden descendente por `started_at` y zonas presentes. Falta
+conectarlo al sincronizador desplegado y derivar `authenticated_subject_id` de
+la identidad IAP/OAuth. Hasta que esos dos límites existan, la tool no se
+expone en el flujo Cloud Run. La carga cloud de verificación usa el sujeto
+técnico `ath_local_smoke_2026`; no es un mapeo de identidad de usuario.
 
 ### Verificación con la autorización existente
 

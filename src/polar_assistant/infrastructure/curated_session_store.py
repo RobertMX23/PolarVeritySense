@@ -8,9 +8,21 @@ out of the domain/application layers.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any
+from typing import Any, Protocol
 
 from polar_assistant.application.curated_sessions import CuratedTrainingSession
+
+
+class FirestoreCuratedSessionDocumentClient(Protocol):
+    """Narrow read port implemented by an injected Firestore client.
+
+    The infrastructure adapter does not construct credentials or a Google
+    client.  Its caller supplies a client that reads only the requested
+    ``athletes/{subject_id}/sessions`` subcollection and returns decoded
+    document mappings.
+    """
+
+    def list_session_documents(self, *, subject_id: str, limit: int) -> list[dict[str, Any]]: ...
 
 
 class InMemoryCuratedSessionRepository:
@@ -55,6 +67,30 @@ class FirestoreCuratedSessionWriter:
             .document(session.session_id)
         )
         reference.set(session.firestore_document(), merge=False)
+
+
+class FirestoreCuratedSessionRepository:
+    """Read validated curated sessions through an injected, scoped client.
+
+    It is intentionally not composed into the ADK application yet. The caller
+    must establish the subject from trusted identity before using it.
+    """
+
+    def __init__(self, client: FirestoreCuratedSessionDocumentClient) -> None:
+        self._client = client
+
+    def latest_for_subject(self, subject_id: str) -> CuratedTrainingSession | None:
+        sessions = self.list_for_subject(subject_id, limit=1)
+        return sessions[0] if sessions else None
+
+    def list_for_subject(self, subject_id: str, *, limit: int) -> list[CuratedTrainingSession]:
+        if limit < 1:
+            raise ValueError("limit debe ser al menos 1")
+        documents = self._client.list_session_documents(subject_id=subject_id, limit=limit)
+        sessions = [CuratedTrainingSession.model_validate(document) for document in documents]
+        if any(session.subject_id != subject_id for session in sessions):
+            raise ValueError("Firestore devolvió una sesión de otro sujeto.")
+        return sorted(sessions, key=lambda session: session.started_at, reverse=True)[:limit]
 
 
 class BigQueryCuratedSessionWriter:

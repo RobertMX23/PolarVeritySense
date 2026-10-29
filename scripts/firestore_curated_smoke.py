@@ -81,7 +81,7 @@ def firestore_fields(document: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _token() -> str:
+def adc_token() -> str:
     credentials, _ = google.auth.default(scopes=[FIRESTORE_SCOPE])
     credentials.refresh(Request())
     if not credentials.token:
@@ -158,7 +158,7 @@ def main() -> int:
         print("No hay sesiones de Polar para validar; no se escribió Firestore.")
         return 3
 
-    token = _token()
+    token = adc_token()
     verified_documents: list[dict[str, Any]] = []
     # Two identical writes per deterministic ID demonstrate idempotent upserts.
     for session in curated:
