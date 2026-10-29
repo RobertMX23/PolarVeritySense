@@ -22,9 +22,9 @@ archivos de proyecto. El procedimiento se mantiene en
 
 La facturación está vinculada y los servicios Cloud Run, Cloud Build, Artifact
 Registry, Secret Manager, Cloud Logging y Vertex AI están habilitados. La
-revisión vigente `polar-sport-assistant-00012-mb7` recibe 100% del tráfico
+revisión vigente `polar-sport-assistant-00013-gp6` recibe 100% del tráfico
 desde la imagen inmutable
-`sha256:544b4a03d3c8e9420619ab3acb5e55b440f7f667456fdc57c0cae6665f9fd58b`.
+`sha256:2d59c68c5443acfde23787be9b1c0b15d3302ed6f3224acc3b24dc7431d1c677`.
 La imagen inicia ADK 2.12.0 con Python 3.13.18 y el mismo
 `SportAssistantRoot`.
 
@@ -144,6 +144,11 @@ garantía distribuida ni proporcionan continuidad entre revisiones. El entorno
 sirve para QA; no demuestra persistencia de producción. El límite de instancias
 tampoco es un límite monetario: compilación, almacenamiento y modelos pueden
 generar cargos por separado.
+
+La revisión `00013` también cubre el formato que envía ADK Web: el middleware
+reescribe tanto `userId` como `user_id` antes de ejecutar `/run_sse`. Una URL
+que conserva una sesión anterior a un despliegue debe abrir **New Session**,
+porque esa sesión SQLite no se puede recuperar tras reemplazar la instancia.
 
 Referencias oficiales: [contrato del contenedor](https://docs.cloud.google.com/run/docs/container-contract),
 [despliegue ADK](https://adk.dev/deploy/cloud-run/),

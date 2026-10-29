@@ -42,6 +42,25 @@ def test_iap_binding_uses_an_opaque_session_id_and_rewrites_client_user_id():
     assert canonical in captured["body"]["body"].decode()
 
 
+def test_iap_binding_rewrites_the_adk_web_user_id_alias():
+    captured = {}
+
+    async def app(scope, receive, send):
+        captured["body"] = await receive()
+
+    raw_iap_id = "accounts.google.com:opaque-subject"
+    body = b'{"userId":"browser-controlled","sessionId":"s1"}'
+    asyncio.run(_invoke(
+        IapUserBindingMiddleware(app),
+        {"type": "http", "path": "/run_sse", "headers": [(b"x-goog-authenticated-user-id", raw_iap_id.encode())]},
+        body,
+    ))
+
+    rewritten = captured["body"]["body"].decode()
+    assert '"userId":"' + _opaque_iap_user_id(raw_iap_id) + '"' in rewritten
+    assert "browser-controlled" not in rewritten
+
+
 def test_iap_binding_rejects_adk_session_endpoints_without_iap_identity():
     events = asyncio.run(_invoke(
         IapUserBindingMiddleware(lambda scope, receive, send: None),

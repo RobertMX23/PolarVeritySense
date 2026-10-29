@@ -91,7 +91,19 @@ class IapUserBindingMiddleware:
             try:
                 decoded = json.loads(raw_body or b"{}")
                 if isinstance(decoded, dict):
-                    decoded["user_id"] = canonical_user_id
+                    # ADK's browser uses the API alias ``userId`` while
+                    # programmatic clients commonly send ``user_id``.  The
+                    # Pydantic model accepts both, but its alias takes
+                    # precedence.  Rewriting only the snake_case spelling
+                    # therefore left a browser request bound to its mutable
+                    # ``user`` value and made a just-created IAP session look
+                    # missing at /run_sse.
+                    if "userId" in decoded:
+                        decoded["userId"] = canonical_user_id
+                    if "user_id" in decoded:
+                        decoded["user_id"] = canonical_user_id
+                    if "userId" not in decoded and "user_id" not in decoded:
+                        decoded["user_id"] = canonical_user_id
                     raw_body = json.dumps(decoded, separators=(",", ":")).encode("utf-8")
             except (TypeError, ValueError):
                 # ADK will report a malformed request body through its normal validation.

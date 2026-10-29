@@ -2,8 +2,8 @@
 
 ## Inventario actual
 
-La suite actual contiene **102 casos de prueba**. El número es el resultado de
-`pytest --collect-only -q`: no representa 102 sesiones manuales ni 102 llamadas
+La suite actual contiene **103 casos de prueba**. El número es el resultado de
+`pytest --collect-only -q`: no representa 103 sesiones manuales ni 103 llamadas
 a Gemini. Un archivo puede producir varios casos mediante `pytest.mark.parametrize`.
 
 | Grupo | Casos | Qué valida | Tipo |
@@ -17,9 +17,9 @@ a Gemini. Un archivo puede producir varios casos mediante `pytest.mark.parametri
 | Sesión curada, Dynamic v4 y compatibilidad v3 | 7 | Allowlist, zonas y duraciones, ID estable, rechazo de payload inválido, consulta limitada al sujeto autenticado y solicitud v4 de `features=zones`. | Unidad / contrato; repositorio en memoria. |
 | Repositorio Firestore curado | 4 | Última sesión, orden descendente, límite, colección vacía, aislamiento de sujeto y documento inválido. | Unidad con cliente Firestore falso; sin llamada remota. |
 | Consulta Firestore desde ADK | 1 | Saludo, sesión IAP opaca, última sesión e histórico curado sin llamada al modelo. | Integración local: ADK Runner y repositorio en memoria. |
-| Enlace IAP → sesión ADK | 3 | Reescritura del `userId` controlado por navegador, rechazo sin encabezado IAP y sujeto técnico configurado. | Unidad ASGI; sin petición remota. |
+| Enlace IAP → sesión ADK | 4 | Reescritura de `userId` y `user_id`, rechazo sin encabezado IAP y sujeto técnico configurado. | Unidad ASGI; sin petición remota. |
 
-Los grupos suman 102. Las pruebas del contrato curado, el repositorio Firestore,
+Los grupos suman 103. Las pruebas del contrato curado, el repositorio Firestore,
 la consulta ADK y el enlace IAP validan la frontera de datos; no contactan Polar,
 Firestore ni BigQuery.
 
@@ -44,7 +44,7 @@ las cinco sesiones desde Firestore, sin Gemini ni escritura.
 
 La primera orden informa el inventario. La segunda ejecuta la suite. Las
 advertencias actuales de `fitparse` por `utcfromtimestamp` son deprecaciones
-de la dependencia; no son fallos de los 102 casos.
+de la dependencia; no son fallos de los 103 casos.
 
 ## Qué estas pruebas sí demuestran
 
