@@ -38,6 +38,27 @@ El servicio de sincronización es un límite de seguridad: gestiona OAuth,
 renovación, reintentos, límites de la API y normalización. El servicio del
 agente sólo lee datos ya autorizados para el sujeto autenticado.
 
+## Contrato implementado
+
+La primera parte del diseño ya está codificada y no requiere una cuenta cloud:
+
+| Pieza | Archivo | Responsabilidad |
+|---|---|---|
+| Proyección de Polar Dynamic v4 | `src/polar_assistant/application/curated_sessions.py` | Acepta únicamente `identifier.id`, inicio, duración, referencia de deporte, FC media/máxima, carga, distancia, calorías y tiempos de procedencia. Ignora los demás campos del proveedor. |
+| Registro curado | `CuratedTrainingSession` | Genera `ses_<uuid>` estable a partir de sujeto interno y sesión Polar, por lo que reintentar una sincronización hace *upsert* del mismo registro. |
+| Adaptadores de escritura | `src/polar_assistant/infrastructure/curated_session_store.py` | Escribe el mismo contrato a Firestore o a una fila de BigQuery a través de un cliente inyectado. |
+| Tool del agente | `sport_assistant_agent/curated_data_tools.py` | Obtiene el sujeto desde `authenticated_subject_id` en estado autenticado; no acepta un ID indicado por el chat. |
+
+Los campos de alto riesgo o no necesarios se descartan antes de persistir:
+`note`, coordenadas, muestras de señal, perfil físico, token OAuth y el JSON
+original. El contrato marca la sesión como `validated` sólo cuando existen FC
+media y máxima; de otro modo queda `summary_only`.
+
+El siguiente cambio de ejecución será conectar el cliente Firestore al
+sincronizador y poblar `authenticated_subject_id` desde la identidad IAP/OAuth.
+Hasta que esos dos límites existan, la tool queda disponible para pruebas con el
+repositorio en memoria y no se expone en el flujo Cloud Run.
+
 ## Estado del repositorio y del despliegue actual
 
 | Área | Estado actual | Implicación |

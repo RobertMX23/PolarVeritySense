@@ -41,6 +41,9 @@ El prompt de implementación controlada está en
 [ADK_GRAPH_IMPLEMENTATION_PROMPT.md](ADK_GRAPH_IMPLEMENTATION_PROMPT.md).
 La arquitectura de conexión de Polar, Firestore y BigQuery está en
 [DATA_CONNECTION_ARCHITECTURE.md](DATA_CONNECTION_ARCHITECTURE.md).
+El contrato Pydantic de sesión curada, los adaptadores de almacenamiento y la
+tool de consulta se preparan en esa arquitectura, pero aún no están conectados
+a una cuenta Polar ni a una base de datos cloud.
 El inventario actual de pruebas está en [TESTING.md](TESTING.md).
 
 ## Inicio de conversación
