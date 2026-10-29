@@ -17,6 +17,9 @@ despliegue de una imagen que lea Firestore se mantienen como la entrega
 posterior. Son dependencias de producto y seguridad, no requisitos para
 terminar la validación local de datos curados.
 
+El prompt de implementación con archivos, ajuste de código y límites está en
+[PROMPT_PHASE1_POLAR_FIRESTORE_LOCAL.md](prompts/PROMPT_PHASE1_POLAR_FIRESTORE_LOCAL.md).
+
 ## Punto de partida verificado
 
 | Capacidad | Estado comprobado | Límite vigente |
