@@ -1,0 +1,24 @@
+project_id = "polar-verity-robertmx23-2026"
+region     = "us-central1"
+
+# Pin the image that has been tested. Replace only with a new digest after its
+# build and local validation are recorded.
+container_image = "us-central1-docker.pkg.dev/polar-verity-robertmx23-2026/polar-assistant/sport-assistant@sha256:4fca3c7dccec787279b3b0d988a9f8baadfcafad9d58f10cd9135af2135440f5"
+gemini_model    = "gemini-3.8-flash"
+gemini_location = "global"
+
+# Firestore stores only curated session summaries, including zone durations;
+# it does not store raw samples or OAuth tokens. The regional location is a
+# database creation decision and cannot be changed afterwards.
+firestore_database_id = "(default)"
+firestore_location    = "us-central1"
+
+# Keep this empty unless access must be granted at service level. Never use
+# allUsers or allAuthenticatedUsers for this QA service.
+service_invokers = []
+
+# IAP protects every ingress path, including the default run.app URL. Set this
+# only after the Google Auth Platform/OAuth client is configured for this
+# project. Add explicit Google users or a Google Group; never grant all users.
+enable_iap        = true
+iap_access_members = ["user:authorized-user@gmail.com"]
