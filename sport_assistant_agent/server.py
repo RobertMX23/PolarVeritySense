@@ -42,13 +42,21 @@ async def _read_body(receive: Callable[[], Awaitable[dict[str, Any]]]) -> bytes:
             return b"".join(chunks)
 
 
-def _replay_body(body: bytes) -> Callable[[], Awaitable[dict[str, Any]]]:
+def _replay_body(
+    body: bytes, original_receive: Callable[[], Awaitable[dict[str, Any]]]
+) -> Callable[[], Awaitable[dict[str, Any]]]:
+    """Supply the rewritten body once, then preserve the ASGI receive channel.
+
+    ``StreamingResponse`` keeps reading the receive channel to detect a client
+    disconnect.  Returning empty ``http.request`` messages forever starves its
+    event loop and prevents ADK's SSE events from being delivered.
+    """
     sent = False
 
     async def receive() -> dict[str, Any]:
         nonlocal sent
         if sent:
-            return {"type": "http.request", "body": b"", "more_body": False}
+            return await original_receive()
         sent = True
         return {"type": "http.request", "body": body, "more_body": False}
 
@@ -111,7 +119,7 @@ class IapUserBindingMiddleware:
             headers = [(name, value) for name, value in scope.get("headers", []) if name.lower() != b"content-length"]
             headers.append((b"content-length", str(len(raw_body)).encode()))
             updated_scope["headers"] = headers
-            receive = _replay_body(raw_body)
+            receive = _replay_body(raw_body, receive)
 
         await self.app(updated_scope, receive, send)
 

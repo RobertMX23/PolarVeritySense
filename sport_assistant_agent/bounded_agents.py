@@ -259,12 +259,6 @@ class GovernedWorkflowAgent(BaseAgent):
             yield message_event(self, ctx, "Hay un caso en ejecución. Espera su resultado; no se abrió otra inferencia.")
             return
         try:
-            # A second invocation may have obtained a stale session before acquiring the lock.
-            latest = await ctx.session_service.get_session(
-                app_name=key[0], user_id=key[1], session_id=key[2],
-            )
-            if latest:
-                ctx.session.state.update(latest.state)
             subject_id = qa_subject_for_iap_user(ctx.session.user_id)
             if subject_id is not None:
                 ctx.session.state["authenticated_subject_id"] = subject_id
